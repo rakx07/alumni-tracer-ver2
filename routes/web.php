@@ -12,11 +12,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
 
-    // USER routes (role check handled in controller middleware)
+    // User intake (role check is inside controller)
     Route::get('/intake', [PortalIntakeController::class, 'form'])->name('intake.form');
     Route::post('/intake', [PortalIntakeController::class, 'save'])->name('intake.save');
 
-    // Officer + IT Admin routes (role check handled in controller middleware)
+    // Officer/Admin (role check inside controller)
     Route::prefix('portal')->group(function () {
         Route::get('/records', [ManageAlumniController::class, 'index'])->name('portal.records.index');
         Route::get('/records/{alumnus}', [ManageAlumniController::class, 'show'])->name('portal.records.show');
@@ -26,7 +26,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/records/{alumnus}/pdf', [ManageAlumniController::class, 'downloadPdf'])->name('portal.records.pdf');
         Route::get('/records/{alumnus}/excel', [ManageAlumniController::class, 'downloadExcel'])->name('portal.records.excel');
 
-        // IT admin only (enforced in controller middleware)
         Route::delete('/records/{alumnus}', [ManageAlumniController::class, 'destroy'])->name('portal.records.destroy');
     });
 });
