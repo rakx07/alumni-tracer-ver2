@@ -18,7 +18,7 @@ class ManageAlumniController extends Controller
         // Officer/Admin can access all routes in this controller
         $this->middleware(function ($request, $next) {
             $role = Auth::user()?->role ?? 'user';
-            abort_unless(in_array($role, ['alumni_officer', 'it_admin'], true), 403);
+            abort_unless(in_array($role, ['admin', 'it_admin', 'alumni_officer'], true), 403);
             return $next($request);
         });
     }
@@ -116,7 +116,7 @@ class ManageAlumniController extends Controller
     {
         // IT ADMIN ONLY
         $role = Auth::user()?->role ?? 'user';
-        abort_unless($role === 'it_admin', 403);
+        abort_unless(in_array($role, ['admin', 'it_admin'], true), 403);
 
         $alumnus->delete(); // soft delete
         return redirect()->route('portal.records.index')->with('success', 'Record soft-deleted.');

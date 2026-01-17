@@ -15,7 +15,7 @@ class IntakeController extends Controller
         // Only role=user can access intake
         $this->middleware(function ($request, $next) {
             $role = Auth::user()?->role ?? 'user';
-            abort_unless($role === 'user', 403);
+            abort_unless(in_array($role, ['admin', 'it_admin', 'alumni_officer'], true), 403);
             return $next($request);
         });
     }
