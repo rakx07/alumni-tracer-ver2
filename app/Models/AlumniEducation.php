@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class AlumniEducation extends Model
 {
+    // ✅ force the correct table
+    protected $table = 'alumni_educations';
+
     protected $fillable = [
         'alumnus_id',
         'level',
