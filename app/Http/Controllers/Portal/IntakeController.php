@@ -1,0 +1,143 @@
+<?php
+
+namespace App\Http\Controllers\Portal;
+
+use App\Http\Controllers\Controller;
+use App\Models\Alumnus;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+class IntakeController extends Controller
+{
+    public function __construct()
+    {
+        // Only role=user can access intake
+        $this->middleware(function ($request, $next) {
+            $role = Auth::user()?->role ?? 'user';
+            abort_unless($role === 'user', 403);
+            return $next($request);
+        });
+    }
+
+    public function form()
+    {
+        $alumnus = Alumnus::with(['educations','employments','communityInvolvements','engagementPreference','consent'])
+            ->where('user_id', Auth::id())
+            ->first();
+
+        return view('user.intake', compact('alumnus'));
+    }
+
+    public function save(Request $request)
+    {
+        $request->validate([
+            'full_name' => ['required','string','max:255'],
+            'email' => ['nullable','email','max:255'],
+            'educations' => ['nullable','array'],
+            'educations.*.level' => ['required_with:educations','string'],
+        ]);
+
+        DB::transaction(function () use ($request) {
+
+            $alumnus = Alumnus::where('user_id', Auth::id())->first();
+
+            $data = $request->only([
+                'full_name','nickname','sex','birthdate','age','civil_status',
+                'home_address','current_address','contact_number','email','facebook',
+                'nationality','religion'
+            ]);
+            $data['user_id'] = Auth::id();
+
+            if (!$alumnus) {
+                $alumnus = Alumnus::create($data);
+            } else {
+                $alumnus->update($data);
+            }
+
+            $alumnus->educations()->delete();
+            $alumnus->employments()->delete();
+            $alumnus->communityInvolvements()->delete();
+
+            foreach ($request->input('educations', []) as $row) {
+                if (empty($row['level'])) continue;
+
+                $alumnus->educations()->create([
+                    'level' => $row['level'],
+                    'student_number' => $row['student_number'] ?? null,
+                    'year_entered' => $row['year_entered'] ?? null,
+                    'year_graduated' => $row['year_graduated'] ?? null,
+                    'last_year_attended' => $row['last_year_attended'] ?? null,
+                    'degree_program' => $row['degree_program'] ?? null,
+                    'specific_program' => $row['specific_program'] ?? null,
+                    'research_title' => $row['research_title'] ?? null,
+                    'thesis_title' => $row['thesis_title'] ?? null,
+                    'strand_track' => $row['strand_track'] ?? null,
+                    'honors_awards' => $row['honors_awards'] ?? null,
+                    'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
+                    'clubs_organizations' => $row['clubs_organizations'] ?? null,
+                    'institution_name' => $row['institution_name'] ?? null,
+                    'institution_address' => $row['institution_address'] ?? null,
+                    'course_degree' => $row['course_degree'] ?? null,
+                    'year_completed' => $row['year_completed'] ?? null,
+                    'scholarship_award' => $row['scholarship_award'] ?? null,
+                    'notes' => $row['notes'] ?? null,
+                ]);
+            }
+
+            foreach ($request->input('employments', []) as $row) {
+                $hasAny = collect($row)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
+                if (!$hasAny) continue;
+
+                $alumnus->employments()->create([
+                    'current_status' => $row['current_status'] ?? null,
+                    'occupation_position' => $row['occupation_position'] ?? null,
+                    'company_name' => $row['company_name'] ?? null,
+                    'org_type' => $row['org_type'] ?? null,
+                    'work_address' => $row['work_address'] ?? null,
+                    'contact_info' => $row['contact_info'] ?? null,
+                    'years_of_service_or_start' => $row['years_of_service_or_start'] ?? null,
+                    'licenses_certifications' => $row['licenses_certifications'] ?? null,
+                    'achievements_awards' => $row['achievements_awards'] ?? null,
+                ]);
+            }
+
+            foreach ($request->input('community', []) as $row) {
+                if (empty($row['organization'])) continue;
+
+                $alumnus->communityInvolvements()->create([
+                    'organization' => $row['organization'] ?? null,
+                    'role_position' => $row['role_position'] ?? null,
+                    'years_involved' => $row['years_involved'] ?? null,
+                ]);
+            }
+
+            $pref = $request->input('engagement', []);
+            $alumnus->engagementPreference()->updateOrCreate(
+                ['alumnus_id' => $alumnus->id],
+                [
+                    'willing_contacted' => !empty($pref['willing_contacted']),
+                    'willing_events' => !empty($pref['willing_events']),
+                    'willing_mentor' => !empty($pref['willing_mentor']),
+                    'willing_donation' => !empty($pref['willing_donation']),
+                    'willing_scholarship' => !empty($pref['willing_scholarship']),
+                    'prefer_email' => !empty($pref['prefer_email']),
+                    'prefer_sms' => !empty($pref['prefer_sms']),
+                    'prefer_facebook' => !empty($pref['prefer_facebook']),
+                ]
+            );
+
+            $consent = $request->input('consent', []);
+            $alumnus->consent()->updateOrCreate(
+                ['alumnus_id' => $alumnus->id],
+                [
+                    'signature_name' => $consent['signature_name'] ?? null,
+                    'consented_at' => !empty($consent['signature_name']) ? now() : null,
+                    'ip_address' => $request->ip(),
+                ]
+            );
+        });
+
+        return redirect()->route('intake.form')->with('success', 'Intake record saved successfully.');
+    }
+}

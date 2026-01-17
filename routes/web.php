@@ -1,20 +1,34 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+use App\Http\Controllers\Portal\PortalDashboardController;
+use App\Http\Controllers\Portal\IntakeController as PortalIntakeController;
+use App\Http\Controllers\Portal\ManageAlumniController;
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/', fn () => view('welcome'));
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
+
+    // USER routes (role check handled in controller middleware)
+    Route::get('/intake', [PortalIntakeController::class, 'form'])->name('intake.form');
+    Route::post('/intake', [PortalIntakeController::class, 'save'])->name('intake.save');
+
+    // Officer + IT Admin routes (role check handled in controller middleware)
+    Route::prefix('portal')->group(function () {
+        Route::get('/records', [ManageAlumniController::class, 'index'])->name('portal.records.index');
+        Route::get('/records/{alumnus}', [ManageAlumniController::class, 'show'])->name('portal.records.show');
+        Route::get('/records/{alumnus}/edit', [ManageAlumniController::class, 'edit'])->name('portal.records.edit');
+        Route::put('/records/{alumnus}', [ManageAlumniController::class, 'update'])->name('portal.records.update');
+
+        Route::get('/records/{alumnus}/pdf', [ManageAlumniController::class, 'downloadPdf'])->name('portal.records.pdf');
+        Route::get('/records/{alumnus}/excel', [ManageAlumniController::class, 'downloadExcel'])->name('portal.records.excel');
+
+        // IT admin only (enforced in controller middleware)
+        Route::delete('/records/{alumnus}', [ManageAlumniController::class, 'destroy'])->name('portal.records.destroy');
+    });
 });
 
 require __DIR__.'/auth.php';
