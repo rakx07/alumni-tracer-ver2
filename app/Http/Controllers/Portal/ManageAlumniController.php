@@ -15,7 +15,6 @@ class ManageAlumniController extends Controller
 {
     public function __construct()
     {
-        // Officer/Admin can access all routes in this controller
         $this->middleware(function ($request, $next) {
             $role = Auth::user()?->role ?? 'user';
             abort_unless(in_array($role, ['admin', 'it_admin', 'alumni_officer'], true), 403);
@@ -26,17 +25,36 @@ class ManageAlumniController extends Controller
     public function index(Request $request)
     {
         $q = $request->query('q');
+        $field = $request->query('field', 'all');
+        $from = $request->query('from');
+        $to = $request->query('to');
+        $perPage = (int) $request->query('per_page', 10);
 
-        $records = Alumnus::query()
-            ->when($q, function ($qr) use ($q) {
-                $qr->where('full_name', 'like', "%{$q}%")
-                   ->orWhere('email', 'like', "%{$q}%");
-            })
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+        $query = Alumnus::query();
 
-        return view('portal.records.index', compact('records', 'q'));
+        if ($q) {
+            $query->where(function ($sub) use ($q, $field) {
+                if ($field === 'name') {
+                    $sub->where('full_name', 'like', "%{$q}%");
+                } elseif ($field === 'email') {
+                    $sub->where('email', 'like', "%{$q}%");
+                } elseif ($field === 'id') {
+                    $sub->where('id', $q);
+                } else {
+                    $sub->where('full_name', 'like', "%{$q}%")
+                        ->orWhere('email', 'like', "%{$q}%")
+                        ->orWhere('id', $q);
+                }
+            });
+        }
+
+        if ($from) $query->whereDate('created_at', '>=', $from);
+        if ($to) $query->whereDate('created_at', '<=', $to);
+
+        $records = $query->latest()->paginate($perPage);
+
+        // ✅ FIX: use "portal" not "portals"
+        return view('portal.records.index', compact('records'));
     }
 
     public function show(Alumnus $alumnus)
@@ -114,11 +132,10 @@ class ManageAlumniController extends Controller
 
     public function destroy(Alumnus $alumnus)
     {
-        // IT ADMIN ONLY
         $role = Auth::user()?->role ?? 'user';
         abort_unless(in_array($role, ['admin', 'it_admin'], true), 403);
 
-        $alumnus->delete(); // soft delete
+        $alumnus->delete();
         return redirect()->route('portal.records.index')->with('success', 'Record soft-deleted.');
     }
 
