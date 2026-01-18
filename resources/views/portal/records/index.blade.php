@@ -1,4 +1,4 @@
-{{-- resources/views/portals/records/index.blade.php --}}
+{{-- resources/views/portal/records/index.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-start justify-between gap-4">
@@ -14,14 +14,14 @@
     </x-slot>
 
     @php
-        // Keep form values persistent
-        $q = request('q');
-        $field = request('field', 'all');   // all|name|email|id
-        $from = request('from');           // YYYY-MM-DD
-        $to = request('to');               // YYYY-MM-DD
+        // Persist filters
+        $q       = request('q');
+        $field   = request('field', 'all');   // all|name|email|id
+        $from    = request('from');          // YYYY-MM-DD
+        $to      = request('to');            // YYYY-MM-DD
         $perPage = request('per_page', 10);
 
-        // Small helper for building query strings in pagination links
+        // Pagination should keep filters
         $append = request()->only(['q','field','from','to','per_page']);
     @endphp
 
@@ -35,113 +35,101 @@
                 </div>
             @endif
 
-            {{-- FILTER BAR --}}
-{{-- FILTER BAR --}}
-<div class="bg-white shadow rounded border border-gray-100">
-    <div class="p-4">
-        <form method="GET" id="filtersForm">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+            {{-- FILTER BAR (aligned / parallel) --}}
+            <div class="bg-white shadow rounded border border-gray-100">
+                <div class="p-4">
+                    <form method="GET" id="filtersForm">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
 
-                {{-- Search --}}
-                <div class="lg:col-span-3">
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Search
-                    </label>
-                    <input
-                        type="text"
-                        name="q"
-                        id="q"
-                        class="w-full border rounded px-3 py-2 h-10"
-                        placeholder="Type to search..."
-                        value="{{ request('q') }}"
-                    >
+                            {{-- Search --}}
+                            <div class="lg:col-span-3">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Search</label>
+                                <input
+                                    type="text"
+                                    name="q"
+                                    id="q"
+                                    class="w-full border rounded px-3 py-2 h-10"
+                                    placeholder="Type to search..."
+                                    value="{{ $q }}"
+                                >
+                            </div>
+
+                            {{-- Search Field --}}
+                            <div class="lg:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Search in</label>
+                                <select
+                                    name="field"
+                                    id="field"
+                                    class="w-full border rounded px-3 py-2 h-10"
+                                >
+                                    <option value="all"   {{ $field==='all'?'selected':'' }}>All fields</option>
+                                    <option value="name"  {{ $field==='name'?'selected':'' }}>Full name</option>
+                                    <option value="email" {{ $field==='email'?'selected':'' }}>Email</option>
+                                    <option value="id"    {{ $field==='id'?'selected':'' }}>Record ID</option>
+                                </select>
+                            </div>
+
+                            {{-- Created From --}}
+                            <div class="lg:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Created from</label>
+                                <input
+                                    type="date"
+                                    name="from"
+                                    id="from"
+                                    class="w-full border rounded px-3 py-2 h-10"
+                                    value="{{ $from }}"
+                                >
+                            </div>
+
+                            {{-- Created To --}}
+                            <div class="lg:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Created to</label>
+                                <input
+                                    type="date"
+                                    name="to"
+                                    id="to"
+                                    class="w-full border rounded px-3 py-2 h-10"
+                                    value="{{ $to }}"
+                                >
+                            </div>
+
+                            {{-- Rows --}}
+                            <div class="lg:col-span-1">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Rows</label>
+                                <select
+                                    name="per_page"
+                                    id="per_page"
+                                    class="w-full border rounded px-3 py-2 h-10"
+                                >
+                                    @foreach([10,25,50,100] as $n)
+                                        <option value="{{ $n }}" {{ (string)$perPage === (string)$n ? 'selected' : '' }}>
+                                            {{ $n }} / page
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Buttons --}}
+                            <div class="lg:col-span-2 flex gap-2">
+                                <button
+                                    type="submit"
+                                    class="h-10 px-4 bg-gray-900 text-white rounded hover:bg-gray-800 w-full"
+                                >
+                                    Apply
+                                </button>
+
+                                <a
+                                    href="{{ route('portal.records.index') }}"
+                                    class="h-10 px-4 bg-gray-100 text-gray-800 rounded border hover:bg-gray-200 w-full text-center flex items-center justify-center"
+                                >
+                                    Reset
+                                </a>
+                            </div>
+
+                        </div>
+                    </form>
                 </div>
-
-                {{-- Search Field --}}
-                <div class="lg:col-span-2">
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Search in
-                    </label>
-                    <select
-                        name="field"
-                        id="field"
-                        class="w-full border rounded px-3 py-2 h-10"
-                    >
-                        <option value="all">All fields</option>
-                        <option value="name" {{ request('field')==='name'?'selected':'' }}>Full name</option>
-                        <option value="email" {{ request('field')==='email'?'selected':'' }}>Email</option>
-                        <option value="id" {{ request('field')==='id'?'selected':'' }}>Record ID</option>
-                    </select>
-                </div>
-
-                {{-- Created From --}}
-                <div class="lg:col-span-2">
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Created from
-                    </label>
-                    <input
-                        type="date"
-                        name="from"
-                        id="from"
-                        class="w-full border rounded px-3 py-2 h-10"
-                        value="{{ request('from') }}"
-                    >
-                </div>
-
-                {{-- Created To --}}
-                <div class="lg:col-span-2">
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Created to
-                    </label>
-                    <input
-                        type="date"
-                        name="to"
-                        id="to"
-                        class="w-full border rounded px-3 py-2 h-10"
-                        value="{{ request('to') }}"
-                    >
-                </div>
-
-                {{-- Rows --}}
-                <div class="lg:col-span-1">
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">
-                        Rows
-                    </label>
-                    <select
-                        name="per_page"
-                        id="per_page"
-                        class="w-full border rounded px-3 py-2 h-10"
-                    >
-                        @foreach([10,25,50,100] as $n)
-                            <option value="{{ $n }}" {{ request('per_page',10)==$n?'selected':'' }}>
-                                {{ $n }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Buttons --}}
-                <div class="lg:col-span-2 flex gap-2">
-                    <button
-                        type="submit"
-                        class="h-10 px-4 bg-gray-900 text-white rounded hover:bg-gray-800 w-full"
-                    >
-                        Apply
-                    </button>
-
-                    <a
-                        href="{{ route('portal.records.index') }}"
-                        class="h-10 px-4 bg-gray-100 text-gray-800 rounded border hover:bg-gray-200 w-full text-center flex items-center justify-center"
-                    >
-                        Reset
-                    </a>
-                </div>
-
             </div>
-        </form>
-    </div>
-</div>
-
 
             {{-- TABLE --}}
             <div class="bg-white shadow rounded border border-gray-100 overflow-hidden">
@@ -160,7 +148,9 @@
                         <tbody>
                             @forelse($records as $a)
                                 <tr class="border-b hover:bg-gray-50">
-                                    <td class="p-3 font-medium text-gray-900">{{ $a->id }}</td>
+                                    <td class="p-3 font-medium text-gray-900 whitespace-nowrap">
+                                        {{ $a->id }}
+                                    </td>
 
                                     <td class="p-3">
                                         <div class="font-semibold text-gray-900">{{ $a->full_name }}</div>
@@ -234,6 +224,7 @@
                     {{ $records->appends($append)->links() }}
                 </div>
             </div>
+
         </div>
     </div>
 
@@ -254,7 +245,7 @@
             if (q) {
                 q.addEventListener('input', function () {
                     clearTimeout(t);
-                    t = setTimeout(() => form.submit(), 500); // submit after user stops typing
+                    t = setTimeout(() => form.submit(), 450); // submit after user stops typing
                 });
             }
 

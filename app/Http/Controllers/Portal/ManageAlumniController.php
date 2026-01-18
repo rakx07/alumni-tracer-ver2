@@ -22,40 +22,62 @@ class ManageAlumniController extends Controller
         });
     }
 
-    public function index(Request $request)
-    {
-        $q = $request->query('q');
-        $field = $request->query('field', 'all');
-        $from = $request->query('from');
-        $to = $request->query('to');
-        $perPage = (int) $request->query('per_page', 10);
+   public function index(Request $request)
+{
+    $q       = $request->query('q');
+    $field   = $request->query('field', 'all');
+    $from    = $request->query('from');
+    $to      = $request->query('to');
+    $perPage = (int) $request->query('per_page', 10);
 
-        $query = Alumnus::query();
+    // NEW:
+    $trashed = $request->query('trashed', 'active'); // active|deleted|all
+    $sort    = $request->query('sort', 'created_at'); // id|full_name|email|created_at
+    $dir     = strtolower($request->query('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-        if ($q) {
-            $query->where(function ($sub) use ($q, $field) {
-                if ($field === 'name') {
-                    $sub->where('full_name', 'like', "%{$q}%");
-                } elseif ($field === 'email') {
-                    $sub->where('email', 'like', "%{$q}%");
-                } elseif ($field === 'id') {
-                    $sub->where('id', $q);
-                } else {
-                    $sub->where('full_name', 'like', "%{$q}%")
-                        ->orWhere('email', 'like', "%{$q}%")
-                        ->orWhere('id', $q);
-                }
-            });
-        }
+    $allowedSorts = ['id', 'full_name', 'email', 'created_at'];
+    if (!in_array($sort, $allowedSorts, true)) $sort = 'created_at';
 
-        if ($from) $query->whereDate('created_at', '>=', $from);
-        if ($to) $query->whereDate('created_at', '<=', $to);
+    $query = Alumnus::query();
 
-        $records = $query->latest()->paginate($perPage);
+    // Soft delete filter
+    if ($trashed === 'deleted') {
+        $query->onlyTrashed();
+    } elseif ($trashed === 'all') {
+        $query->withTrashed();
+    } // else: active only (default)
 
-        // ✅ FIX: use "portal" not "portals"
-        return view('portal.records.index', compact('records'));
+    // Search
+    if ($q) {
+        $query->where(function ($sub) use ($q, $field) {
+            if ($field === 'name') {
+                $sub->where('full_name', 'like', "%{$q}%");
+            } elseif ($field === 'email') {
+                $sub->where('email', 'like', "%{$q}%");
+            } elseif ($field === 'id') {
+                $sub->where('id', $q);
+            } else {
+                $sub->where('full_name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('id', $q);
+            }
+        });
     }
+
+    if ($from) $query->whereDate('created_at', '>=', $from);
+    if ($to)   $query->whereDate('created_at', '<=', $to);
+
+    // Sorting
+    $records = $query->orderBy($sort, $dir)->paginate($perPage)->withQueryString();
+
+    // AJAX: return table partial only
+    if ($request->ajax()) {
+        return view('portal.records._table', compact('records'));
+    }
+
+    return view('portal.records.index', compact('records'));
+}
+
 
     public function show(Alumnus $alumnus)
     {
