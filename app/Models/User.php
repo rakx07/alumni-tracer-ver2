@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\NDMUVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -40,5 +41,9 @@ class User extends Authenticatable implements MustVerifyEmail
             ($this->middle_name ? $this->middle_name . ' ' : '') .
             $this->last_name
         );
+    }
+     public function sendEmailVerificationNotification()
+    {
+        $this->notify(new NDMUVerifyEmail);
     }
 }

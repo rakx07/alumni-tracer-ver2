@@ -12,17 +12,28 @@ class IntakeController extends Controller
 {
     public function __construct()
     {
-        // Only role=user can access intake
+        // ✅ Allow regular users to access intake (and optionally allow admins too)
         $this->middleware(function ($request, $next) {
             $role = Auth::user()?->role ?? 'user';
-            abort_unless(in_array($role, ['admin', 'it_admin', 'alumni_officer'], true), 403);
+
+            // Allow these roles to use intake
+            $allowedRoles = ['user', 'admin', 'it_admin', 'alumni_officer'];
+
+            abort_unless(in_array($role, $allowedRoles, true), 403);
+
             return $next($request);
         });
     }
 
     public function form()
     {
-        $alumnus = Alumnus::with(['educations','employments','communityInvolvements','engagementPreference','consent'])
+        $alumnus = Alumnus::with([
+                'educations',
+                'employments',
+                'communityInvolvements',
+                'engagementPreference',
+                'consent'
+            ])
             ->where('user_id', Auth::id())
             ->first();
 
@@ -32,10 +43,11 @@ class IntakeController extends Controller
     public function save(Request $request)
     {
         $request->validate([
-            'full_name' => ['required','string','max:255'],
-            'email' => ['nullable','email','max:255'],
-            'educations' => ['nullable','array'],
-            'educations.*.level' => ['required_with:educations','string'],
+            'full_name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+
+            'educations' => ['nullable', 'array'],
+            'educations.*.level' => ['required_with:educations', 'string'],
         ]);
 
         DB::transaction(function () use ($request) {
@@ -47,6 +59,7 @@ class IntakeController extends Controller
                 'home_address','current_address','contact_number','email','facebook',
                 'nationality','religion'
             ]);
+
             $data['user_id'] = Auth::id();
 
             if (!$alumnus) {
