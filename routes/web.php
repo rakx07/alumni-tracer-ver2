@@ -8,7 +8,7 @@ use App\Http\Controllers\Portal\ManageAlumniController;
 
 Route::get('/', fn () => view('welcome'));
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
 
