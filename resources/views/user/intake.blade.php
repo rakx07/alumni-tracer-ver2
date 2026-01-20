@@ -70,10 +70,18 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium">Age</label>
-                                <input type="number" name="age" class="w-full border rounded p-2"
-                                       value="{{ old('age', $alumnus->age ?? '') }}">
-                            </div>
+                            <label class="block text-sm font-medium">Age</label>
+                            <input
+                                type="number"
+                                name="age"
+                                id="age"
+                                readonly
+                                class="w-full border rounded p-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+                                value="{{ old('age', $alumnus->age ?? '') }}"
+                                tabindex="-1"
+                            >
+                        </div>
+
 
                             <div>
                                 <label class="block text-sm font-medium">Civil Status</label>
@@ -257,6 +265,56 @@
         const educationWrap = document.getElementById('education-wrap');
         const employmentWrap = document.getElementById('employment-wrap');
         const communityWrap = document.getElementById('community-wrap');
+
+    // added here 
+     function computeAgeFromBirthdate(birthdateStr) {
+        if (!birthdateStr) return '';
+
+        const dob = new Date(birthdateStr + 'T00:00:00'); // avoid timezone shifts
+        if (isNaN(dob.getTime())) return '';
+
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+
+        // Guard: future dates => blank
+        if (age < 0) return '';
+
+        return age;
+    }
+
+    function syncAgeFromBirthdate() {
+        const birthInput = document.querySelector('input[name="birthdate"]');
+        const ageInput = document.getElementById('age');
+        if (!birthInput || !ageInput) return;
+
+        const age = computeAgeFromBirthdate(birthInput.value);
+        ageInput.value = age;
+
+        // Optional: if birthdate is cleared, clear age too
+        if (!birthInput.value) ageInput.value = '';
+    }
+
+    // Run on load + when birthdate changes
+    document.addEventListener('DOMContentLoaded', () => {
+        const birthInput = document.querySelector('input[name="birthdate"]');
+        if (birthInput) {
+            birthInput.addEventListener('change', syncAgeFromBirthdate);
+            birthInput.addEventListener('input', syncAgeFromBirthdate);
+        }
+        syncAgeFromBirthdate(); // compute initial age if birthdate exists
+    });
+
+
+
+    //end here
+
+
+
 
         function educationCard(i, data = {}) {
             const div = document.createElement('div');
