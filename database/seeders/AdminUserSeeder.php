@@ -14,6 +14,9 @@ class AdminUserSeeder extends Seeder
             ['email' => 'admin@ndmu.edu.ph'],
             [
                 'name' => 'NDMU Admin',
+                'first_name' => 'Admin',
+                'last_name' => 'Admin',
+                'middle_name' => 'Admin',
                 'password' => Hash::make('@ChangeMe123!'),
                 'role' => 'admin',
             ]

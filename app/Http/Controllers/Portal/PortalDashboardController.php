@@ -13,12 +13,12 @@ class PortalDashboardController extends Controller
         $user = Auth::user();
         $role = $user?->role ?? 'user';
 
-        // Officer/Admin dashboard
-        if (in_array($role, ['it_admin', 'alumni_officer'], true)) {
+        // ✅ Officer/Admin dashboard
+        if (in_array($role, ['admin', 'it_admin', 'alumni_officer'], true)) {
             return view('portal.dashboard');
         }
 
-        // User dashboard
+        // ✅ User dashboard
         $alumnus = Alumnus::where('user_id', Auth::id())->first();
         return view('user.dashboard', compact('alumnus'));
     }
