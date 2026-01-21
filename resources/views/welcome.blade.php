@@ -515,8 +515,8 @@
                     <p style="color:rgba(255,255,255,.90);margin:0;">
                         <strong>Office:</strong> Office of Alumni Relations<br>
                         <strong>University:</strong> Notre Dame of Marbel University<br>
-                        <strong>Email:</strong> alumni@ndmu.edu.ph (update if different)<br>
-                        <strong>Phone:</strong> (000) 000-0000 (update if different)
+                        <strong>Email:</strong> alumni@ndmu.edu.ph<br>
+                        <strong>Phone:</strong> (083) 228-3598 Local 166
                     </p>
                 </div>
             </div>
