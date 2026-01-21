@@ -94,7 +94,7 @@ class ManageAlumniController extends Controller
     public function update(Request $request, Alumnus $alumnus)
     {
         $request->validate([
-            'full_name' => ['required','string','max:255'],
+            // 'full_name' => ['required','string','max:255'],
             'email' => ['nullable','email','max:255'],
         ]);
 

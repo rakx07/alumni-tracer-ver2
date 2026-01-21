@@ -12,33 +12,114 @@ class IntakeController extends Controller
 {
     public function form()
     {
-        $alumnus = Alumnus::with(['educations','employments','communityInvolvements','engagementPreference','consent'])
+        $alumnus = Alumnus::with([
+                'educations',
+                'employments',
+                'communityInvolvements',
+                'engagementPreference',
+                'consent',
+            ])
             ->where('user_id', Auth::id())
             ->first();
 
-        return view('user.intake', compact('alumnus'));
+        $user = Auth::user();
+
+        return view('user.intake', compact('alumnus', 'user'));
+    }
+
+    /**
+     * Build a Full Name string from user name parts.
+     * Format: Last, First Middle Suffix
+     * Example: "Dela Cruz, Juan P. Jr."
+     */
+    private function buildFullNameFromUser($user): string
+    {
+        $last   = trim((string) ($user->last_name ?? ''));
+        $first  = trim((string) ($user->first_name ?? ''));
+        $middle = trim((string) ($user->middle_name ?? ''));
+        $suffix = trim((string) ($user->suffix ?? ''));
+
+        // Build "First Middle" part
+        $firstMiddle = trim($first . ' ' . $middle);
+
+        // Build "Last, First Middle"
+        $base = trim($last);
+        if ($firstMiddle !== '') {
+            $base = $base !== '' ? ($base . ', ' . $firstMiddle) : $firstMiddle;
+        }
+
+        // Append suffix
+        if ($suffix !== '') {
+            $base = trim($base . ' ' . $suffix);
+        }
+
+        // Fallback if name parts are empty
+        if ($base === '') {
+            // If your users table still has `name`, use it as final fallback
+            $base = trim((string) ($user->name ?? ''));
+        }
+
+        return $base;
     }
 
     public function save(Request $request)
     {
         $request->validate([
-            'full_name' => ['required','string','max:255'],
+            // Name fields are not required here because they're coming from the User table.
+            // Keep them only if you allow editing name parts in the intake form.
+            'last_name'   => ['nullable', 'string', 'max:255'],
+            'first_name'  => ['nullable', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'suffix'      => ['nullable', 'string', 'max:50'],
+
+            'nickname' => ['nullable','string','max:255'],
+            'sex' => ['nullable','string','max:20'],
+            'birthdate' => ['nullable','date'],
+            'age' => ['nullable','integer','min:0','max:150'],
+            'civil_status' => ['nullable','string','max:50'],
+            'home_address' => ['nullable','string'],
+            'current_address' => ['nullable','string'],
+            'contact_number' => ['nullable','string','max:50'],
             'email' => ['nullable','email','max:255'],
+            'facebook' => ['nullable','string','max:255'],
+            'nationality' => ['nullable','string','max:255'],
+            'religion' => ['nullable','string','max:255'],
+
             'educations' => ['nullable','array'],
             'educations.*.level' => ['required_with:educations','string'],
+
+            'employments' => ['nullable','array'],
+            'community' => ['nullable','array'],
+
+            'engagement' => ['nullable','array'],
+            'consent' => ['nullable','array'],
+            'consent.signature_name' => ['nullable','string','max:255'],
         ]);
 
         DB::transaction(function () use ($request) {
+            $user = Auth::user();
 
-            $alumnus = Alumnus::where('user_id', Auth::id())->first();
+            $alumnus = Alumnus::where('user_id', $user->id)->first();
 
+            // ✅ IMPORTANT: do NOT read full_name from request anymore
+            // Instead, auto-generate it from user table.
             $data = $request->only([
-                'full_name','nickname','sex','birthdate','age','civil_status',
+                'nickname','sex','birthdate','age','civil_status',
                 'home_address','current_address','contact_number','email','facebook',
                 'nationality','religion'
             ]);
 
-            $data['user_id'] = Auth::id();
+            $data['user_id'] = $user->id;
+
+            // ✅ If alumni table still requires full_name (NOT NULL), set it automatically.
+            $data['full_name'] = $this->buildFullNameFromUser($user);
+
+            // (Optional) also store name parts in alumni table IF you have these columns
+            // If you don't have these columns, remove these lines.
+            if (Schema::hasColumn('alumni', 'last_name'))   $data['last_name']   = $user->last_name;
+            if (Schema::hasColumn('alumni', 'first_name'))  $data['first_name']  = $user->first_name;
+            if (Schema::hasColumn('alumni', 'middle_name')) $data['middle_name'] = $user->middle_name;
+            if (Schema::hasColumn('alumni', 'suffix'))      $data['suffix']      = $user->suffix;
 
             if (!$alumnus) {
                 $alumnus = Alumnus::create($data);
@@ -80,7 +161,7 @@ class IntakeController extends Controller
 
             // Employments
             foreach ($request->input('employments', []) as $row) {
-                $hasAny = collect($row)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
+                $hasAny = collect($row)->filter(fn ($v) => $v !== null && $v !== '')->isNotEmpty();
                 if (!$hasAny) continue;
 
                 $alumnus->employments()->create([

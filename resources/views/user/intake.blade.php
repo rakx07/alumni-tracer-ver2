@@ -40,11 +40,38 @@
                         <div class="text-lg font-semibold mb-3">I. Personal Information</div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-sm font-medium">Full Name</label>
-                                <input name="full_name" class="w-full border rounded p-2"
-                                       value="{{ old('full_name', $alumnus->full_name ?? '') }}" required>
-                            </div>
+                            @php
+                        $u = auth()->user();
+                        $last   = old('last_name',  $u->last_name  ?? ($alumnus->last_name  ?? ''));
+                        $first  = old('first_name', $u->first_name ?? ($alumnus->first_name ?? ''));
+                        $middle = old('middle_name',$u->middle_name?? ($alumnus->middle_name?? ''));
+                        $suffix = old('suffix',     $u->suffix     ?? ($alumnus->suffix     ?? ''));
+                    @endphp
+
+                    <div>
+                        <label class="block text-sm font-medium">Last Name</label>
+                        <input name="last_name" class="w-full border rounded p-2 bg-gray-100 text-gray-700"
+                            value="{{ $last }}" readonly tabindex="-1">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium">First Name</label>
+                        <input name="first_name" class="w-full border rounded p-2 bg-gray-100 text-gray-700"
+                            value="{{ $first }}" readonly tabindex="-1">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium">Middle Name (Optional)</label>
+                        <input name="middle_name" class="w-full border rounded p-2 bg-gray-100 text-gray-700"
+                            value="{{ $middle }}" readonly tabindex="-1">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium">Suffix (Optional)</label>
+                        <input name="suffix" class="w-full border rounded p-2 bg-gray-100 text-gray-700"
+                            value="{{ $suffix }}" readonly tabindex="-1">
+                    </div>
+
 
                             <div>
                                 <label class="block text-sm font-medium">Nickname</label>

@@ -37,30 +37,67 @@ class IntakeController extends Controller
             ->where('user_id', Auth::id())
             ->first();
 
-        return view('user.intake', compact('alumnus'));
+        $user = Auth::user();
+
+        return view('user.intake', compact('alumnus', 'user'));
+    }
+
+    /**
+     * Build full name from user name parts:
+     * "Last, First Middle Suffix"
+     */
+    private function buildFullNameFromUser($user): string
+    {
+        $last   = trim((string) ($user->last_name ?? ''));
+        $first  = trim((string) ($user->first_name ?? ''));
+        $middle = trim((string) ($user->middle_name ?? ''));
+        $suffix = trim((string) ($user->suffix ?? ''));
+
+        $firstMiddle = trim($first . ' ' . $middle);
+
+        $base = trim($last);
+        if ($firstMiddle !== '') {
+            $base = $base !== '' ? ($base . ', ' . $firstMiddle) : $firstMiddle;
+        }
+
+        if ($suffix !== '') {
+            $base = trim($base . ' ' . $suffix);
+        }
+
+        // fallback (if name parts are not yet added to users table)
+        if ($base === '') {
+            $base = trim((string) ($user->name ?? ''));
+        }
+
+        return $base;
     }
 
     public function save(Request $request)
     {
         $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
+            // ✅ removed full_name requirement
             'email' => ['nullable', 'email', 'max:255'],
-
             'educations' => ['nullable', 'array'],
             'educations.*.level' => ['required_with:educations', 'string'],
         ]);
 
         DB::transaction(function () use ($request) {
 
-            $alumnus = Alumnus::where('user_id', Auth::id())->first();
+            $user = Auth::user();
 
+            $alumnus = Alumnus::where('user_id', $user->id)->first();
+
+            // ✅ IMPORTANT: removed 'full_name' from request->only()
             $data = $request->only([
-                'full_name','nickname','sex','birthdate','age','civil_status',
+                'nickname','sex','birthdate','age','civil_status',
                 'home_address','current_address','contact_number','email','facebook',
                 'nationality','religion'
             ]);
 
-            $data['user_id'] = Auth::id();
+            $data['user_id'] = $user->id;
+
+            // ✅ If alumni.full_name is NOT NULL in DB, always provide a value
+            $data['full_name'] = $this->buildFullNameFromUser($user);
 
             if (!$alumnus) {
                 $alumnus = Alumnus::create($data);
@@ -68,10 +105,12 @@ class IntakeController extends Controller
                 $alumnus->update($data);
             }
 
+            // Replace child rows
             $alumnus->educations()->delete();
             $alumnus->employments()->delete();
             $alumnus->communityInvolvements()->delete();
 
+            // Educations
             foreach ($request->input('educations', []) as $row) {
                 if (empty($row['level'])) continue;
 
@@ -98,6 +137,7 @@ class IntakeController extends Controller
                 ]);
             }
 
+            // Employments
             foreach ($request->input('employments', []) as $row) {
                 $hasAny = collect($row)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
                 if (!$hasAny) continue;
@@ -115,6 +155,7 @@ class IntakeController extends Controller
                 ]);
             }
 
+            // Community
             foreach ($request->input('community', []) as $row) {
                 if (empty($row['organization'])) continue;
 
@@ -125,6 +166,7 @@ class IntakeController extends Controller
                 ]);
             }
 
+            // Engagement (single row)
             $pref = $request->input('engagement', []);
             $alumnus->engagementPreference()->updateOrCreate(
                 ['alumnus_id' => $alumnus->id],
@@ -140,6 +182,7 @@ class IntakeController extends Controller
                 ]
             );
 
+            // Consent (single row)
             $consent = $request->input('consent', []);
             $alumnus->consent()->updateOrCreate(
                 ['alumnus_id' => $alumnus->id],
