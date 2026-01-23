@@ -1,5 +1,6 @@
 <x-guest-layout>
     <!-- Session Status -->
+     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <form method="POST" action="{{ route('login') }}">
@@ -38,6 +39,12 @@
                     {{ __('Forgot your password?') }}
                 </a>
             @endif
+            <!-- Added for verification: -->
+                <div class="mt-4">
+                <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}"></div>
+                <x-input-error :messages="$errors->get('cf-turnstile-response')" class="mt-2" />
+            </div>
+
 
             <x-primary-button class="ms-3">
                 {{ __('Log in') }}

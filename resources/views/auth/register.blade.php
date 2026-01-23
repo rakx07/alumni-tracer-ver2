@@ -1,4 +1,5 @@
 <x-guest-layout>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
@@ -83,6 +84,12 @@
                href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
+
+            <!-- Added for Register -->
+            <div class="mt-4">
+                <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}"></div>
+                <x-input-error :messages="$errors->get('cf-turnstile-response')" class="mt-2" />
+            </div>
 
             <x-primary-button class="ms-4">
                 {{ __('Register') }}

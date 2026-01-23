@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\TurnstileValid;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,9 @@ class RegisteredUserController extends Controller
             'last_name'   => ['required', 'string', 'max:255'],
             'email'       => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password'    => ['required', 'confirmed', Rules\Password::defaults()],
+
+            // ✅ Turnstile captcha token (this is the field Turnstile posts)
+            'cf-turnstile-response' => ['required', new TurnstileValid()],
         ]);
 
         // Duplicate protection (case-insensitive)
