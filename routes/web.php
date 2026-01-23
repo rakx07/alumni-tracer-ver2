@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Portal\PortalDashboardController;
 use App\Http\Controllers\Portal\IntakeController as PortalIntakeController;
 use App\Http\Controllers\Portal\ManageAlumniController;
+use App\Http\Controllers\ITAdmin\CaptchaSettingsController;
 
 Route::get('/', fn () => view('welcome'));
 
@@ -28,6 +29,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::delete('/records/{alumnus}', [ManageAlumniController::class, 'destroy'])->name('portal.records.destroy');
     });
+});
+
+Route::middleware(['auth', 'role:it_admin'])->prefix('it-admin')->name('itadmin.')->group(function () {
+    Route::get('/captcha', [CaptchaSettingsController::class, 'edit'])->name('captcha.edit');
+    Route::post('/captcha', [CaptchaSettingsController::class, 'update'])->name('captcha.update');
 });
 
 require __DIR__.'/auth.php';
