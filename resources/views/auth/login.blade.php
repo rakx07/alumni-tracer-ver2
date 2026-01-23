@@ -33,17 +33,20 @@
             </label>
         </div>
 
+        <!-- Added for verification: -->
+                <div class="mt-4">
+                <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}"></div>
+                <x-input-error :messages="$errors->get('cf-turnstile-response')" class="mt-2" />
+            </div>
+
+
         <div class="flex items-center justify-end mt-4">
             @if (Route::has('password.request'))
                 <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
                     {{ __('Forgot your password?') }}
                 </a>
             @endif
-            <!-- Added for verification: -->
-                <div class="mt-4">
-                <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}"></div>
-                <x-input-error :messages="$errors->get('cf-turnstile-response')" class="mt-2" />
-            </div>
+            
 
 
             <x-primary-button class="ms-3">
