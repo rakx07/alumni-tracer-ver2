@@ -1,4 +1,7 @@
 <x-guest-layout>
+
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    
     <div class="mb-4 text-sm text-gray-600">
         {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
     </div>
@@ -15,7 +18,11 @@
             <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
-
+          <!-- Added for verification: -->
+                <div class="mt-4">
+                <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}"></div>
+                <x-input-error :messages="$errors->get('cf-turnstile-response')" class="mt-2" />
+            </div>
         <div class="flex items-center justify-end mt-4">
             <x-primary-button>
                 {{ __('Email Password Reset Link') }}
