@@ -1,6 +1,6 @@
 <x-guest-layout>
     <!-- Session Status -->
-     <!-- <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script> -->
+     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     <form method="POST" action="{{ route('login') }}">
@@ -33,11 +33,11 @@
             </label>
         </div>
 
-        <!-- Added for verification:
+        <!-- Added for verification: -->
                 <div class="mt-4">
                 <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}"></div>
                 <x-input-error :messages="$errors->get('cf-turnstile-response')" class="mt-2" />
-            </div> -->
+            </div>
 
 
         <div class="flex items-center justify-end mt-4">
