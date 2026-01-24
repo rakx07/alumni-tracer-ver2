@@ -8,6 +8,7 @@ use App\Http\Controllers\Portal\ManageAlumniController;
 use App\Http\Controllers\ITAdmin\CaptchaSettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ITAdmin\UserManagementController;
+use App\Http\Controllers\EventController;
 
 Route::get('/', fn () => view('welcome'));
 
@@ -57,7 +58,34 @@ Route::middleware(['auth', 'verified', 'role:it_admin'])
         Route::post('/users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggle_active');
     });
 
+//Added for events
+/*
+|--------------------------------------------------------------------------
+| Events (public / authenticated)
+|--------------------------------------------------------------------------
+*/
+Route::get('/events', fn () => view('events.index'))->name('events.index');
 
+Route::get('/events/calendar', [EventController::class, 'public'])
+    ->name('events.calendar');
+
+/*
+|--------------------------------------------------------------------------
+| Alumni Officer / IT Admin – Event Management
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:alumni_officer,it_admin'])
+    ->prefix('portal/events')
+    ->name('portal.events.')
+    ->group(function () {
+
+        Route::get('/', [EventController::class, 'index'])->name('index');
+        Route::get('/create', [EventController::class, 'create'])->name('create');
+        Route::post('/', [EventController::class, 'store'])->name('store');
+        Route::get('/{event}/edit', [EventController::class, 'edit'])->name('edit');
+        Route::put('/{event}', [EventController::class, 'update'])->name('update');
+        Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
+    });
 
 
 Route::middleware(['auth', 'role:it_admin'])->prefix('it-admin')->name('itadmin.')->group(function () {

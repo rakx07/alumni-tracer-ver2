@@ -416,6 +416,15 @@
                             <span>Announcements, posters, and real-time updates</span>
                         </div>
                     </a>
+                    <a href="{{ route('events.calendar') }}"
+                    class="linkcard">
+                        <div class="linkicon green">📅</div>
+                        <div class="linkmeta">
+                            <strong>Calendar of Events</strong>
+                            <span>View upcoming alumni and university events.</span>
+                            <em>Open calendar →</em>
+                        </div>
+                    </a>
                 </div>
             </div>
 
