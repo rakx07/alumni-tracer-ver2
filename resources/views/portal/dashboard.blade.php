@@ -21,7 +21,7 @@
         </div>
     </x-slot>
 
-    @php
+        @php
         $user = auth()->user();
         $role = $user->role ?? 'user';
         $roleLabel = match($role) {
@@ -31,7 +31,8 @@
             default => ucfirst($role),
         };
 
-        // Optional stats (safe if not provided). Controller can pass these later.
+        $isOfficer = in_array($role, ['alumni_officer','admin','it_admin'], true);
+
         $stats = $stats ?? [
             'total_records' => null,
             'new_this_month' => null,
@@ -39,6 +40,7 @@
             'with_contact' => null,
         ];
     @endphp
+
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
@@ -84,6 +86,25 @@
                             style="border-color:rgba(255,255,255,.45); color:#fff;">
                                 Account Settings
                             </a>
+
+                             @if($isOfficer)
+                            @if(Route::has('events.calendar'))
+                                <a href="{{ route('events.calendar') }}"
+                                class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                style="background:rgba(227,199,122,.18); border:1px solid rgba(227,199,122,.55); color:#fff;">
+                                    Calendar of Events
+                                </a>
+                            @endif
+
+                            @if(Route::has('portal.events.index'))
+                                <a href="{{ route('portal.events.index') }}"
+                                class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                style="background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff;">
+                                    Manage Events
+                                </a>
+                            @endif
+                        @endif       
+
 
                             {{-- ✅ NEW: User Management (IT Admin only) --}}
                             @if(($role ?? null) === 'it_admin')
@@ -197,6 +218,27 @@
                             <div class="text-sm font-semibold" style="color:#0B3D2E;">Review New Entries</div>
                             <div class="text-xs text-gray-600 mt-1">Browse recent records efficiently.</div>
                         </a>
+                        {{-- ✅ NEW: Events cards (Alumni Officer/Admin/IT Admin) --}}
+                @if($isOfficer)
+                    @if(Route::has('portal.events.index'))
+                        <a href="{{ route('portal.events.index') }}"
+                        class="p-4 rounded-lg border hover:shadow-sm transition"
+                        style="border-color:#E3C77A;">
+                            <div class="text-sm font-semibold" style="color:#0B3D2E;">Manage Events</div>
+                            <div class="text-xs text-gray-600 mt-1">Create, edit, publish, and organize alumni events.</div>
+                        </a>
+                    @endif
+
+                    @if(Route::has('events.calendar'))
+                        <a href="{{ route('events.calendar') }}"
+                        class="p-4 rounded-lg border hover:shadow-sm transition"
+                        style="border-color:#E3C77A;">
+                            <div class="text-sm font-semibold" style="color:#0B3D2E;">Calendar of Events</div>
+                            <div class="text-xs text-gray-600 mt-1">View upcoming events as seen by alumni users.</div>
+                        </a>
+                    @endif
+                @endif
+
                     </div>
                 </div>
 
@@ -239,6 +281,27 @@
                         </div>
                     </div>
                 </div>
+                {{-- ✅ NEW: Events cards (Alumni Officer/Admin/IT Admin)
+                @if($isOfficer)
+                    @if(Route::has('portal.events.index'))
+                        <a href="{{ route('portal.events.index') }}"
+                        class="p-4 rounded-lg border hover:shadow-sm transition"
+                        style="border-color:#E3C77A;">
+                            <div class="text-sm font-semibold" style="color:#0B3D2E;">Manage Events</div>
+                            <div class="text-xs text-gray-600 mt-1">Create, edit, publish, and organize alumni events.</div>
+                        </a>
+                    @endif
+
+                    @if(Route::has('events.calendar'))
+                        <a href="{{ route('events.calendar') }}"
+                        class="p-4 rounded-lg border hover:shadow-sm transition"
+                        style="border-color:#E3C77A;">
+                            <div class="text-sm font-semibold" style="color:#0B3D2E;">Calendar of Events</div>
+                            <div class="text-xs text-gray-600 mt-1">View upcoming events as seen by alumni users.</div>
+                        </a>
+                    @endif
+                @endif --}}
+
             </div>
 
         </div>

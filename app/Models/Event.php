@@ -13,6 +13,13 @@ class Event extends Model
         'end_date',
         'location',
         'is_published',
+        'type',
+        'organizer',
+        'target_group',
+        'audience',
+        'registration_link',
+        'contact_email',
+        'poster_path',
     ];
 
     protected $casts = [

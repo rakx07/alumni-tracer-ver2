@@ -59,23 +59,8 @@ Route::middleware(['auth', 'verified', 'role:it_admin'])
     });
 
 //Added for events
-/*
-|--------------------------------------------------------------------------
-| Events (public / authenticated)
-|--------------------------------------------------------------------------
-*/
-Route::get('/events', fn () => view('events.index'))->name('events.index');
-
-Route::get('/events/calendar', [EventController::class, 'public'])
-    ->name('events.calendar');
-
-/*
-|--------------------------------------------------------------------------
-| Alumni Officer / IT Admin – Event Management
-|--------------------------------------------------------------------------
-*/
 Route::middleware(['auth', 'role:alumni_officer,it_admin'])
-    ->prefix('portal/events')
+    ->prefix('events')
     ->name('portal.events.')
     ->group(function () {
 
@@ -86,6 +71,7 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
         Route::put('/{event}', [EventController::class, 'update'])->name('update');
         Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
     });
+
 
 
 Route::middleware(['auth', 'role:it_admin'])->prefix('it-admin')->name('itadmin.')->group(function () {
