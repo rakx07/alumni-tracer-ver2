@@ -21,19 +21,35 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'name'  => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'first_name'  => ['required','string','max:100'],
+            'middle_name' => ['nullable','string','max:100'],
+            'last_name'   => ['required','string','max:100'],
+            'email'       => ['required','string','lowercase','email','max:255','unique:users,email,' . $user->id],
         ]);
 
-        // If email changed, you may want to re-verify email
+        // Recompute display name
+        $fullName = trim(
+            $data['first_name'] . ' ' .
+            ($data['middle_name'] ? $data['middle_name'] . ' ' : '') .
+            $data['last_name']
+        );
+
+        // If email changed, reset verification
         if ($data['email'] !== $user->email) {
             $user->email_verified_at = null;
         }
 
-        $user->fill($data)->save();
+        $user->update([
+            'first_name' => $data['first_name'],
+            'middle_name'=> $data['middle_name'],
+            'last_name'  => $data['last_name'],
+            'name'       => $fullName,
+            'email'      => $data['email'],
+        ]);
 
         return back()->with('status', 'profile-updated');
     }
+
 
     public function password(Request $request)
     {
