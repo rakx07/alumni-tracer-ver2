@@ -94,15 +94,66 @@
             padding:10px 0;
             flex-wrap:wrap;
         }
-        .nav a{
+        .nav a, .nav .nav-btn{
             font-size:12px;
             letter-spacing:.8px;
             text-transform:uppercase;
             opacity:.92;
             padding:8px 10px;
             border-radius:10px;
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
         }
-        .nav a:hover{background:rgba(255,255,255,.10);opacity:1}
+        .nav a:hover, .nav .nav-btn:hover{background:rgba(255,255,255,.10);opacity:1}
+
+        /* Dropdown (pure CSS) */
+        .nav-drop{
+            position:relative;
+            display:inline-flex;
+        }
+        .nav-btn{
+            background:transparent;
+            border:0;
+            color:#fff;
+            cursor:pointer;
+        }
+        .nav-menu{
+            position:absolute;
+            top:42px;
+            left:0;
+            min-width:260px;
+            background:#fff;
+            color:var(--ink);
+            border:1px solid rgba(15,23,42,.12);
+            border-radius:14px;
+            box-shadow: 0 12px 28px rgba(2,6,23,.18);
+            padding:8px;
+            display:none;
+            z-index:60;
+        }
+       .nav-menu{ display:none; }
+        .nav-drop.open .nav-menu{ display:block; }
+
+        .nav-item{
+            display:flex;
+            gap:10px;
+            padding:10px 10px;
+            border-radius:12px;
+            align-items:flex-start;
+        }
+        .nav-item:hover{background:#f8fafc}
+        .nav-item strong{display:block;font-size:13px}
+        .nav-item span{display:block;font-size:12px;color:rgba(15,23,42,.65);line-height:1.35}
+        .nav-icon{
+            width:34px;height:34px;border-radius:10px;
+            display:flex;align-items:center;justify-content:center;
+            font-weight:900;
+            border:1px solid rgba(15,23,42,.12);
+            background:rgba(2,6,23,.04);
+        }
+        .nav-icon.green{background:rgba(11,93,42,.12);border-color:rgba(11,93,42,.20);color:var(--ndmu-green)}
+        .nav-icon.blue{background:rgba(24,119,242,.12);border-color:rgba(24,119,242,.20);color:#1877F2}
 
         /* Hero */
         .hero{
@@ -212,6 +263,30 @@
             line-height:1.55;
         }
 
+        /* Link cards */
+        .linkcard{
+            display:flex;gap:12px;align-items:flex-start;
+            padding:16px;
+            border-radius:16px;
+            border:1px solid rgba(15,23,42,.10);
+            background:#fff;
+            box-shadow: 0 6px 16px rgba(2,6,23,.05);
+            transition:.15s ease;
+        }
+        .linkcard:hover{transform: translateY(-1px); box-shadow: 0 10px 22px rgba(2,6,23,.08)}
+        .linkicon{
+            width:44px;height:44px;border-radius:14px;
+            display:flex;align-items:center;justify-content:center;
+            font-weight:900;
+            border:1px solid rgba(15,23,42,.12);
+            background:rgba(2,6,23,.04);
+        }
+        .linkicon.green{background:rgba(11,93,42,.12);border-color:rgba(11,93,42,.20);color:var(--ndmu-green)}
+        .linkicon.blue{background:rgba(24,119,242,.12);border-color:rgba(24,119,242,.20);color:#1877F2}
+        .linkmeta strong{display:block;font-size:15px}
+        .linkmeta span{display:block;font-size:13px;color:var(--muted);line-height:1.55;margin-top:2px}
+        .linkmeta em{display:inline-block;margin-top:8px;font-style:normal;font-weight:900;font-size:12px;color:rgba(15,23,42,.85)}
+
         /* Footer */
         footer{
             margin-top:26px;
@@ -249,17 +324,22 @@
             .brand{min-width:auto}
             .hero h1{font-size:34px}
             .footer-inner{grid-template-columns:1fr}
+            .nav-menu{left:auto; right:0}
         }
     </style>
 </head>
 
 <body>
+    @php
+        $newsUrl = 'https://www.ndmu.edu.ph/news-and-updates';
+        $fbUrl   = 'https://www.facebook.com/ndmuofficial/';
+    @endphp
+
     {{-- TOP BAR --}}
     <div class="topbar">
         <div class="container">
             <div class="topbar-inner">
                 <div class="brand">
-                    {{-- If you have a logo file, place it in: public/images/ndmu-logo.png --}}
                     <div class="brand-badge">
                         @if(file_exists(public_path('images/ndmu-logo.png')))
                             <img src="{{ asset('images/ndmu-logo.png') }}" alt="NDMU Logo">
@@ -303,7 +383,43 @@
                 <a href="#home">Home</a>
                 <a href="#services">Online Services</a>
                 <a href="#programs">Programs</a>
-                <a href="#events">Events</a>
+
+                {{-- Events dropdown --}}
+                <div class="nav-drop" data-dd>
+                <button class="nav-btn" type="button" data-dd-btn aria-haspopup="true" aria-expanded="false">
+                    Events <span aria-hidden="true">▾</span>
+                </button>
+
+                <div class="nav-menu" data-dd-menu role="menu" aria-label="Events menu">
+                    @if(Route::has('events.index'))
+                        <a class="nav-item" href="{{ route('events.index') }}" role="menuitem">
+                            <div class="nav-icon green">E</div>
+                            <div>
+                                <strong>Events & Updates Page</strong>
+                                <span>Official links to NDMU updates (Website & Facebook).</span>
+                            </div>
+                        </a>
+                    @endif
+
+                    <a class="nav-item" href="https://www.ndmu.edu.ph/news-and-updates" target="_blank" rel="noopener" role="menuitem">
+                        <div class="nav-icon green">🌐</div>
+                        <div>
+                            <strong>NDMU News & Updates</strong>
+                            <span>Open official university postings on ndmu.edu.ph</span>
+                        </div>
+                    </a>
+
+                    <a class="nav-item" href="https://www.facebook.com/ndmuofficial/" target="_blank" rel="noopener" role="menuitem">
+                        <div class="nav-icon blue">f</div>
+                        <div>
+                            <strong>NDMU Official Facebook</strong>
+                            <span>Announcements, posters, and real-time updates</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+
                 <a href="#news">News & Features</a>
                 <a href="#about">About</a>
                 <a href="#contact">Contact</a>
@@ -325,7 +441,6 @@
                     </p>
 
                     <div class="hero-actions">
-                        {{-- Primary CTA: intake / tracer --}}
                         @auth
                             <a class="btn btn-primary" href="{{ route('intake.form') }}">Complete Alumni Tracer</a>
                             <a class="btn btn-outline" href="{{ route('dashboard') }}">Go to Dashboard</a>
@@ -412,23 +527,44 @@
     <section id="events" class="section" style="padding-top:0;">
         <div class="container">
             <div class="section-title">
-                <h2>Events</h2>
-                <p>Upcoming activities and gatherings will be posted here. Check back regularly for updates.</p>
+                <h2>Events & Official Updates</h2>
+                <p>For official postings and announcements, please use the University’s official platforms below.</p>
             </div>
 
-            <div class="grid">
-                <div class="card">
-                    <h3>Alumni Homecoming</h3>
-                    <p>Schedule and registration details will be announced by the Office of Alumni Relations.</p>
-                </div>
-                <div class="card">
-                    <h3>College / Program Reunions</h3>
-                    <p>Reunion coordination and communications will be posted for participating batches and programs.</p>
-                </div>
-                <div class="card">
-                    <h3>Professional & Community Activities</h3>
-                    <p>Seminars, talks, outreach, and volunteer programs for alumni participation.</p>
-                </div>
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                <a class="linkcard" href="{{ $newsUrl }}" target="_blank" rel="noopener">
+                    <div class="linkicon green">🌐</div>
+                    <div class="linkmeta">
+                        <strong>NDMU News & Updates</strong>
+                        <span>Official website postings, announcements, and updates.</span>
+                        <em>Open website →</em>
+                    </div>
+                </a>
+
+                <a class="linkcard" href="{{ $fbUrl }}" target="_blank" rel="noopener">
+                    <div class="linkicon blue">f</div>
+                    <div class="linkmeta">
+                        <strong>NDMU Official Facebook Page</strong>
+                        <span>Real-time updates, posters, and quick announcements.</span>
+                        <em>Open Facebook →</em>
+                    </div>
+                </a>
+
+                @if(Route::has('events.index'))
+                    <a class="linkcard" href="{{ route('events.index') }}">
+                        <div class="linkicon green">E</div>
+                        <div class="linkmeta">
+                            <strong>Events & Updates Page</strong>
+                            <span>View official external links in a dedicated page within this portal.</span>
+                            <em>Open page →</em>
+                        </div>
+                    </a>
+                @else
+                    <div class="card">
+                        <h3>Alumni Activities</h3>
+                        <p>Upcoming alumni activities will be coordinated by the Office of Alumni Relations. Kindly check the official channels above.</p>
+                    </div>
+                @endif
             </div>
         </div>
     </section>
@@ -497,6 +633,9 @@
                             @if (Route::has('portal.records.index') && in_array(auth()->user()->role, ['admin','it_admin','alumni_officer'], true))
                                 <a href="{{ route('portal.records.index') }}">Manage Records</a>
                             @endif
+                            @if(Route::has('profile.edit'))
+                                <a href="{{ route('profile.edit') }}">Account Settings</a>
+                            @endif
                         @else
                             @if (Route::has('login'))
                                 <a href="{{ route('login') }}">Login</a>
@@ -505,6 +644,9 @@
                                 <a href="{{ route('register') }}">Register</a>
                             @endif
                         @endauth
+
+                        <a href="{{ $newsUrl }}" target="_blank" rel="noopener">NDMU News</a>
+                        <a href="{{ $fbUrl }}" target="_blank" rel="noopener">NDMU Facebook</a>
                         <a href="#services">Services</a>
                         <a href="#about">About</a>
                     </div>
@@ -526,5 +668,59 @@
             </div>
         </div>
     </footer>
+    <script>
+    (function () {
+        const dropdowns = document.querySelectorAll('[data-dd]');
+
+        dropdowns.forEach(dd => {
+            const btn = dd.querySelector('[data-dd-btn]');
+            const menu = dd.querySelector('[data-dd-menu]');
+
+            // Toggle on button click
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // close other dropdowns
+                dropdowns.forEach(other => {
+                    if (other !== dd) {
+                        other.classList.remove('open');
+                        const b = other.querySelector('[data-dd-btn]');
+                        if (b) b.setAttribute('aria-expanded', 'false');
+                    }
+                });
+
+                const isOpen = dd.classList.toggle('open');
+                btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+
+            // prevent clicks inside menu from closing immediately
+            menu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        });
+
+        // Click outside closes all
+        document.addEventListener('click', () => {
+            dropdowns.forEach(dd => {
+                dd.classList.remove('open');
+                const btn = dd.querySelector('[data-dd-btn]');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+            });
+        });
+
+        // Escape key closes all
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                dropdowns.forEach(dd => {
+                    dd.classList.remove('open');
+                    const btn = dd.querySelector('[data-dd-btn]');
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                });
+            }
+        });
+    })();
+</script>
+
 </body>
 </html>
