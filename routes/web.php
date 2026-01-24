@@ -12,19 +12,24 @@ use App\Http\Controllers\EventController;
 
 Route::get('/', fn () => view('welcome'));
 
+// ✅ Public Calendar Page (needed because you call route('events.calendar'))
+Route::get('/events/calendar', [EventController::class, 'public'])->name('events.calendar');
+
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
-    //added for the profile management
+
+    // Profile management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'password'])->name('profile.password');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    // User intake (role check is inside controller)
+
+    // Intake
     Route::get('/intake', [PortalIntakeController::class, 'form'])->name('intake.form');
     Route::post('/intake', [PortalIntakeController::class, 'save'])->name('intake.save');
 
-    // Officer/Admin (role check inside controller)
+    // Portal Records
     Route::prefix('portal')->group(function () {
         Route::get('/records', [ManageAlumniController::class, 'index'])->name('portal.records.index');
         Route::get('/records/{alumnus}', [ManageAlumniController::class, 'show'])->name('portal.records.show');
@@ -37,7 +42,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/records/{alumnus}', [ManageAlumniController::class, 'destroy'])->name('portal.records.destroy');
     });
 });
-//added for profile management
+
+// IT Admin
 Route::middleware(['auth', 'verified', 'role:it_admin'])
     ->prefix('it-admin')
     ->name('itadmin.')
@@ -46,7 +52,7 @@ Route::middleware(['auth', 'verified', 'role:it_admin'])
         Route::get('/captcha', [CaptchaSettingsController::class, 'edit'])->name('captcha.edit');
         Route::post('/captcha', [CaptchaSettingsController::class, 'update'])->name('captcha.update');
 
-        // ✅ User Management
+        // User Management
         Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserManagementController::class, 'create'])->name('users.create');
         Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
@@ -58,12 +64,11 @@ Route::middleware(['auth', 'verified', 'role:it_admin'])
         Route::post('/users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggle_active');
     });
 
-//Added for events
+// Events (Officer / Admin portal)
 Route::middleware(['auth', 'role:alumni_officer,it_admin'])
-    ->prefix('events')
+    ->prefix('portal/events')
     ->name('portal.events.')
     ->group(function () {
-
         Route::get('/', [EventController::class, 'index'])->name('index');
         Route::get('/create', [EventController::class, 'create'])->name('create');
         Route::post('/', [EventController::class, 'store'])->name('store');
@@ -71,12 +76,6 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
         Route::put('/{event}', [EventController::class, 'update'])->name('update');
         Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
     });
-
-
-
-Route::middleware(['auth', 'role:it_admin'])->prefix('it-admin')->name('itadmin.')->group(function () {
-    Route::get('/captcha', [CaptchaSettingsController::class, 'edit'])->name('captcha.edit');
-    Route::post('/captcha', [CaptchaSettingsController::class, 'update'])->name('captcha.update');
-});
+Route::get('/events/calendar', [EventController::class, 'public'])->name('events.calendar');
 
 require __DIR__.'/auth.php';
