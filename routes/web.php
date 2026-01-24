@@ -77,5 +77,7 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
         Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
     });
 Route::get('/events/calendar', [EventController::class, 'public'])->name('events.calendar');
+Route::get('/events/{event}', [EventController::class, 'showPublic'])->name('events.show');
+
 
 require __DIR__.'/auth.php';

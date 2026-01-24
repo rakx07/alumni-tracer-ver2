@@ -121,4 +121,9 @@ class EventController extends Controller
 
         return back()->with('success', 'Event deleted.');
     }
+    public function showPublic(Event $event)
+{
+    abort_unless($event->is_published, 404);
+    return view('events.show', compact('event'));
+}
 }
