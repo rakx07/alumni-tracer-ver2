@@ -29,7 +29,7 @@ class RegisteredUserController extends Controller
             'password'    => ['required', 'confirmed', Rules\Password::defaults()],
 
             // ✅ Turnstile captcha token (this is the field Turnstile posts)
-            'cf-turnstile-response' => ['required', new TurnstileValid()],
+            'cf-turnstile-response' => ['nullable', new TurnstileValid()],
         ]);
 
         // Duplicate protection (case-insensitive)

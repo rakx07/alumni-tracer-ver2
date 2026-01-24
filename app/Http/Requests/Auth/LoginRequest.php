@@ -21,15 +21,14 @@ class LoginRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-    {
-        return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+        {
+            return [
+                'email' => ['required', 'string', 'email'],
+                'password' => ['required', 'string'],
+                'cf-turnstile-response' => ['nullable', new \App\Rules\TurnstileValid()],
+            ];
+        }
 
-            // ✅ Turnstile captcha token
-            'cf-turnstile-response' => ['required', new TurnstileValid()],
-        ];
-    }
 
     /**
      * Attempt to authenticate the request's credentials.
