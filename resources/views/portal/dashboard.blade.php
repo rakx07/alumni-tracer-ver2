@@ -66,18 +66,35 @@
                             </p>
 
                             <div class="mt-4 flex flex-wrap gap-2">
-                                <a href="{{ route('portal.records.index') }}"
-                                   class="inline-flex items-center px-4 py-2 rounded font-semibold"
-                                   style="background:#E3C77A; color:#0B3D2E;">
-                                    Manage Alumni Records
-                                </a>
+                            <a href="{{ route('portal.records.index') }}"
+                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                            style="background:#E3C77A; color:#0B3D2E;">
+                                Manage Alumni Records
+                            </a>
 
-                                <a href="{{ route('intake.form') }}"
-                                   class="inline-flex items-center px-4 py-2 rounded font-semibold border"
-                                   style="border-color:rgba(227,199,122,.65); color:#fff;">
-                                    Alumni Intake Form
+                            <a href="{{ route('intake.form') }}"
+                            class="inline-flex items-center px-4 py-2 rounded font-semibold border"
+                            style="border-color:rgba(227,199,122,.65); color:#fff;">
+                                Alumni Intake Form
+                            </a>
+
+                            {{-- ✅ NEW: Account Settings --}}
+                            <a href="{{ route('profile.edit') }}"
+                            class="inline-flex items-center px-4 py-2 rounded font-semibold border"
+                            style="border-color:rgba(255,255,255,.45); color:#fff;">
+                                Account Settings
+                            </a>
+
+                            {{-- ✅ NEW: User Management (IT Admin only) --}}
+                            @if(($role ?? null) === 'it_admin')
+                                <a href="{{ route('itadmin.users.index') }}"
+                                class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
+                                    User Management
                                 </a>
-                            </div>
+                            @endif
+                        </div>
+
                         </div>
 
                         {{-- Quick status card --}}
