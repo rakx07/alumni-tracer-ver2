@@ -12,8 +12,9 @@ use App\Http\Controllers\EventController;
 
 Route::get('/', fn () => view('welcome'));
 
-// ✅ Public Calendar Page (needed because you call route('events.calendar'))
+/* ================= PUBLIC EVENTS ================= */
 Route::get('/events/calendar', [EventController::class, 'public'])->name('events.calendar');
+Route::get('/events/{event}', [EventController::class, 'showPublic'])->name('events.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -41,9 +42,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::delete('/records/{alumnus}', [ManageAlumniController::class, 'destroy'])->name('portal.records.destroy');
     });
+
 });
 
-// IT Admin
+/* ================= IT ADMIN ================= */
 Route::middleware(['auth', 'verified', 'role:it_admin'])
     ->prefix('it-admin')
     ->name('itadmin.')
@@ -64,7 +66,7 @@ Route::middleware(['auth', 'verified', 'role:it_admin'])
         Route::post('/users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggle_active');
     });
 
-// Events (Officer / Admin portal)
+/* ================= PORTAL EVENTS (Officer/Admin) ================= */
 Route::middleware(['auth', 'role:alumni_officer,it_admin'])
     ->prefix('portal/events')
     ->name('portal.events.')
@@ -76,8 +78,5 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
         Route::put('/{event}', [EventController::class, 'update'])->name('update');
         Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
     });
-Route::get('/events/calendar', [EventController::class, 'public'])->name('events.calendar');
-Route::get('/events/{event}', [EventController::class, 'showPublic'])->name('events.show');
-
 
 require __DIR__.'/auth.php';

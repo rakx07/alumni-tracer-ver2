@@ -48,6 +48,7 @@
                 </div>
             @endif
 
+            {{-- MAIN UPDATE FORM --}}
             <form method="POST"
                   action="{{ route('portal.events.update', $event) }}"
                   enctype="multipart/form-data"
@@ -55,6 +56,9 @@
                   style="border-color:#EDE7D1;">
                 @csrf
                 @method('PUT')
+
+                {{-- IMPORTANT: ensure checkbox always submits a value --}}
+                <input type="hidden" name="is_published" value="0">
 
                 {{-- Basic Info --}}
                 <div class="rounded-xl border p-5" style="border-color:#EDE7D1;">
@@ -138,8 +142,6 @@
 
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                         @php
-                            // If you are still using start_date/end_date (DATE), keep these as date inputs.
-                            // If you upgraded to start_at/end_at (DATETIME), switch these to datetime-local and map accordingly.
                             $startDate = old('start_date', optional($event->start_date)->format('Y-m-d'));
                             $endDate   = old('end_date', optional($event->end_date)->format('Y-m-d'));
                         @endphp
@@ -210,8 +212,6 @@
                             <div class="text-xs text-gray-600 mt-1">
                                 If you upload a new poster, it will replace the current one.
                             </div>
-
-                            {{-- Optional: keep existing poster path if you want to show it later --}}
                         </div>
 
                         <div>
@@ -234,7 +234,7 @@
                     </div>
                 </div>
 
-                {{-- Actions --}}
+                {{-- Actions (NO nested form) --}}
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <button type="submit"
@@ -250,18 +250,14 @@
                         </a>
                     </div>
 
-                    {{-- Delete --}}
-                    <form method="POST" action="{{ route('portal.events.destroy', $event) }}"
-                          onsubmit="return confirm('Delete this event? This action cannot be undone.');">
-                        @csrf
-                        @method('DELETE')
-
-                        <button type="submit"
-                                class="px-5 py-2 rounded font-semibold text-white"
-                                style="background:#991B1B;">
-                            Delete Event
-                        </button>
-                    </form>
+                    {{-- Delete button submits separate form below --}}
+                    <button type="submit"
+                            form="deleteEventForm"
+                            class="px-5 py-2 rounded font-semibold text-white"
+                            style="background:#991B1B;"
+                            onclick="return confirm('Delete this event? This action cannot be undone.');">
+                        Delete Event
+                    </button>
                 </div>
 
                 {{-- Note --}}
@@ -275,6 +271,13 @@
                 </div>
 
             </form>
+
+            {{-- SEPARATE DELETE FORM (outside the update form) --}}
+            <form id="deleteEventForm" method="POST" action="{{ route('portal.events.destroy', $event) }}">
+                @csrf
+                @method('DELETE')
+            </form>
+
         </div>
     </div>
 </x-app-layout>

@@ -19,6 +19,12 @@ class EventController extends Controller
         return view('events.calendar', compact('events'));
     }
 
+    public function showPublic(Event $event)
+    {
+        abort_unless($event->is_published, 404);
+        return view('events.show', compact('event'));
+    }
+
     /* ================= ADMIN ================= */
 
     public function index()
@@ -40,25 +46,20 @@ class EventController extends Controller
             'organizer' => ['nullable','string','max:255'],
             'target_group' => ['nullable','string','max:255'],
             'audience' => ['nullable','string','max:100'],
-
             'description' => ['nullable','string'],
 
-            // ✅ REQUIRED by DB
             'start_date' => ['required','date'],
             'end_date'   => ['nullable','date','after_or_equal:start_date'],
 
-            // ✅ your column name is location (not venue)
             'location' => ['nullable','string','max:255'],
-
-            // ✅ optional link (only validate if filled)
             'registration_link' => ['nullable','sometimes','url','max:255'],
             'contact_email' => ['nullable','email','max:255'],
 
-            'poster' => ['nullable','image','max:4096'], // 4MB
-            'is_published' => ['nullable','boolean'],
+            'poster' => ['nullable','image','max:4096'],
+            'is_published' => ['required','boolean'], // because blade sends hidden 0
         ]);
 
-        $data['is_published'] = (bool)($data['is_published'] ?? false);
+        $data['is_published'] = $request->boolean('is_published');
 
         if ($request->hasFile('poster')) {
             $data['poster_path'] = $request->file('poster')->store('events/posters', 'public');
@@ -82,22 +83,20 @@ class EventController extends Controller
             'organizer' => ['nullable','string','max:255'],
             'target_group' => ['nullable','string','max:255'],
             'audience' => ['nullable','string','max:100'],
-
             'description' => ['nullable','string'],
 
             'start_date' => ['required','date'],
             'end_date'   => ['nullable','date','after_or_equal:start_date'],
 
             'location' => ['nullable','string','max:255'],
-
             'registration_link' => ['nullable','sometimes','url','max:255'],
             'contact_email' => ['nullable','email','max:255'],
 
             'poster' => ['nullable','image','max:4096'],
-            'is_published' => ['nullable','boolean'],
+            'is_published' => ['required','boolean'],
         ]);
 
-        $data['is_published'] = (bool)($data['is_published'] ?? false);
+        $data['is_published'] = $request->boolean('is_published');
 
         if ($request->hasFile('poster')) {
             if ($event->poster_path) {
@@ -121,9 +120,4 @@ class EventController extends Controller
 
         return back()->with('success', 'Event deleted.');
     }
-    public function showPublic(Event $event)
-{
-    abort_unless($event->is_published, 404);
-    return view('events.show', compact('event'));
-}
 }
