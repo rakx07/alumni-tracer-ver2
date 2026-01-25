@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name', 'NDMU Alumni Portal') }}</title>
 
+    {{-- Favicon --}}
+<link rel="icon" href="{{ asset('NDMU_logo_icon.ico') }}" type="image/x-icon">
+<link rel="shortcut icon" href="{{ asset('NDMU_logo_icon.ico') }}" type="image/x-icon">
+
     <style>
     :root{
         --ndmu-green:#0b5d2a;
