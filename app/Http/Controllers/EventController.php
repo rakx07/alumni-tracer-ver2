@@ -55,7 +55,7 @@ class EventController extends Controller
             'registration_link' => ['nullable','sometimes','url','max:255'],
             'contact_email' => ['nullable','email','max:255'],
 
-            'poster' => ['nullable','image','max:4096'],
+            'poster' => ['nullable','image','max:10240'],
             'is_published' => ['required','boolean'], // because blade sends hidden 0
         ]);
 
@@ -92,7 +92,7 @@ class EventController extends Controller
             'registration_link' => ['nullable','sometimes','url','max:255'],
             'contact_email' => ['nullable','email','max:255'],
 
-            'poster' => ['nullable','image','max:4096'],
+            'poster' => ['nullable','image','max:10240'],
             'is_published' => ['required','boolean'],
         ]);
 
