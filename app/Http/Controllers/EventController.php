@@ -39,45 +39,46 @@ class EventController extends Controller
     }
 
     public function store(Request $request)
-{
-    $data = $request->validate([
-        'title' => ['required','string','max:255'],
-        'type' => ['nullable','string','max:80'],
-        'organizer' => ['nullable','string','max:255'],
-        'target_group' => ['nullable','string','max:255'],
-        'audience' => ['nullable','string','max:100'],
-        'description' => ['nullable','string'],
+    {
+        $data = $request->validate([
+            'title' => ['required','string','max:255'],
+            'type' => ['nullable','string','max:80'],
+            'organizer' => ['nullable','string','max:255'],
+            'target_group' => ['nullable','string','max:255'],
+            'audience' => ['nullable','string','max:100'],
+            'description' => ['nullable','string'],
 
-        'start_date' => ['required','date'],
-        'end_date'   => ['nullable','date','after_or_equal:start_date'],
+            'start_date' => ['required','date'],
+            'end_date'   => ['nullable','date','after_or_equal:start_date'],
 
-        'location' => ['nullable','string','max:255'],
-        'registration_link' => ['nullable','sometimes','url','max:255'],
-        'contact_email' => ['nullable','email','max:255'],
+            'location' => ['nullable','string','max:255'],
+            'registration_link' => ['nullable','sometimes','url','max:255'],
+            'contact_email' => ['nullable','email','max:255'],
 
-        'poster' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:10240'], // 10MB
-        'is_published' => ['required','boolean'],
-    ]);
+            // ✅ Image OR PDF up to 10MB (max is in KB)
+            'poster' => ['nullable','file','max:10240','mimetypes:application/pdf,image/jpeg,image/png'],
 
-    $data['is_published'] = $request->boolean('is_published');
+            'is_published' => ['required','boolean'],
+        ]);
 
-    if ($request->hasFile('poster')) {
-        $file = $request->file('poster');
+        $data['is_published'] = $request->boolean('is_published');
 
-        if (!$file->isValid()) {
-            return back()->withErrors([
-                'poster' => 'The poster failed to upload. Error code: '.$file->getError()
-            ])->withInput();
+        if ($request->hasFile('poster')) {
+            $file = $request->file('poster');
+
+            if (!$file->isValid()) {
+                return back()->withErrors([
+                    'poster' => 'Upload failed. Error code: '.$file->getError()
+                ])->withInput();
+            }
+
+            $data['poster_path'] = $file->store('events/posters', 'public');
         }
 
-        $data['poster_path'] = $file->store('events/posters', 'public');
+        Event::create($data);
+
+        return redirect()->route('portal.events.index')->with('success', 'Event created successfully.');
     }
-
-    Event::create($data);
-
-    return redirect()->route('portal.events.index')->with('success', 'Event created successfully.');
-}
-
 
     public function edit(Event $event)
     {
@@ -85,50 +86,51 @@ class EventController extends Controller
     }
 
     public function update(Request $request, Event $event)
-{
-    $data = $request->validate([
-        'title' => ['required','string','max:255'],
-        'type' => ['nullable','string','max:80'],
-        'organizer' => ['nullable','string','max:255'],
-        'target_group' => ['nullable','string','max:255'],
-        'audience' => ['nullable','string','max:100'],
-        'description' => ['nullable','string'],
+    {
+        $data = $request->validate([
+            'title' => ['required','string','max:255'],
+            'type' => ['nullable','string','max:80'],
+            'organizer' => ['nullable','string','max:255'],
+            'target_group' => ['nullable','string','max:255'],
+            'audience' => ['nullable','string','max:100'],
+            'description' => ['nullable','string'],
 
-        'start_date' => ['required','date'],
-        'end_date'   => ['nullable','date','after_or_equal:start_date'],
+            'start_date' => ['required','date'],
+            'end_date'   => ['nullable','date','after_or_equal:start_date'],
 
-        'location' => ['nullable','string','max:255'],
-        'registration_link' => ['nullable','sometimes','url','max:255'],
-        'contact_email' => ['nullable','email','max:255'],
+            'location' => ['nullable','string','max:255'],
+            'registration_link' => ['nullable','sometimes','url','max:255'],
+            'contact_email' => ['nullable','email','max:255'],
 
-        'poster' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:10240'], // 10MB
-        'is_published' => ['required','boolean'],
-    ]);
+            // ✅ Image OR PDF up to 10MB
+            'poster' => ['nullable','file','max:10240','mimetypes:application/pdf,image/jpeg,image/png'],
 
-    $data['is_published'] = $request->boolean('is_published');
+            'is_published' => ['required','boolean'],
+        ]);
 
-    if ($request->hasFile('poster')) {
-        $file = $request->file('poster');
+        $data['is_published'] = $request->boolean('is_published');
 
-        if (!$file->isValid()) {
-            return back()->withErrors([
-                'poster' => 'The poster failed to upload. Error code: '.$file->getError()
-            ])->withInput();
+        if ($request->hasFile('poster')) {
+            $file = $request->file('poster');
+
+            if (!$file->isValid()) {
+                return back()->withErrors([
+                    'poster' => 'Upload failed. Error code: '.$file->getError()
+                ])->withInput();
+            }
+
+            // delete old poster
+            if ($event->poster_path) {
+                Storage::disk('public')->delete($event->poster_path);
+            }
+
+            $data['poster_path'] = $file->store('events/posters', 'public');
         }
 
-        // delete old poster first
-        if ($event->poster_path) {
-            Storage::disk('public')->delete($event->poster_path);
-        }
+        $event->update($data);
 
-        $data['poster_path'] = $file->store('events/posters', 'public');
+        return redirect()->route('portal.events.index')->with('success', 'Event updated.');
     }
-
-    $event->update($data);
-
-    return redirect()->route('portal.events.index')->with('success', 'Event updated.');
-}
-
 
     public function destroy(Event $event)
     {

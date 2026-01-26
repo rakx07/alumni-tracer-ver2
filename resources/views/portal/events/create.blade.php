@@ -28,7 +28,9 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('portal.events.store') }}" enctype="multipart/form-data"
+            <form method="POST"
+                  action="{{ route('portal.events.store') }}"
+                  enctype="multipart/form-data"
                   class="bg-white rounded-xl shadow border p-6 space-y-6"
                   style="border-color:#EDE7D1;">
                 @csrf
@@ -153,8 +155,9 @@
                     <div class="text-sm font-semibold" style="color:#0B3D2E;">Event Poster (Optional)</div>
 
                     <div class="mt-4">
-                        <input type="file" name="poster" class="w-full">
-                        <div class="text-xs text-gray-600 mt-1">JPG/PNG up to 10MB.</div>
+                        <input type="file" name="poster" class="w-full"
+                               accept="image/png,image/jpeg,application/pdf">
+                        <div class="text-xs text-gray-600 mt-1">JPG/PNG/PDF up to 10MB.</div>
                     </div>
                 </div>
 

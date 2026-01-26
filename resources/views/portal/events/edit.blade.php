@@ -4,9 +4,7 @@
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
                 <h2 class="font-semibold text-xl text-gray-900">Edit Event</h2>
-                <p class="text-sm text-gray-600">
-                    Update event details for the Calendar of Events.
-                </p>
+                <p class="text-sm text-gray-600">Update event details for the Calendar of Events.</p>
             </div>
 
             <div class="flex items-center gap-2">
@@ -26,6 +24,20 @@
             </div>
         </div>
     </x-slot>
+
+   @php
+    $posterUrl = !empty($event->poster_path)
+        ? asset('storage/'.$event->poster_path)
+        : null;
+
+    $ext = $event->poster_path
+        ? strtolower(pathinfo($event->poster_path, PATHINFO_EXTENSION))
+        : null;
+
+    $isPdf = ($ext === 'pdf');
+@endphp
+
+
 
     <div class="py-8">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
@@ -57,7 +69,6 @@
                 @csrf
                 @method('PUT')
 
-                {{-- IMPORTANT: ensure checkbox always submits a value --}}
                 <input type="hidden" name="is_published" value="0">
 
                 {{-- Basic Info --}}
@@ -201,40 +212,52 @@
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <div class="text-sm font-semibold" style="color:#0B3D2E;">Event Poster</div>
-                            <div class="text-xs text-gray-600 mt-1">Optional. JPG/PNG up to 10MB.</div>
+                            <div class="text-xs text-gray-600 mt-1">Optional. JPG / PNG / PDF up to 10MB.</div>
                         </div>
                     </div>
 
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                         <div>
                             <label class="text-sm font-semibold text-gray-700">Upload New Poster</label>
-                            <input type="file" name="poster" class="mt-1 w-full">
+                            <input type="file" name="poster" class="mt-1 w-full"
+                                   accept="image/png,image/jpeg,application/pdf">
                             <div class="text-xs text-gray-600 mt-1">
-                                If you upload a new poster, it will replace the current one.
+                                If you upload a new file, it will replace the current one.
                             </div>
                         </div>
 
                         <div>
                             <label class="text-sm font-semibold text-gray-700">Current Poster</label>
-                            @if(!empty($event->poster_path))
-                                <div class="mt-2 rounded-lg border overflow-hidden" style="border-color:#EDE7D1;">
-                                    <img src="{{ asset('storage/'.$event->poster_path) }}"
+
+                            @if($posterUrl)
+                                @if($isPdf)
+                                    <button type="button"
+                                            onclick="openPosterModal('{{ $posterUrl }}','pdf')"
+                                            class="mt-2 px-4 py-2 rounded font-semibold text-white"
+                                            style="background:#0B3D2E;">
+                                        View Current Poster (PDF)
+                                    </button>
+                                    <div class="mt-2 text-xs text-gray-600">
+                                        Stored at: <span class="font-mono">{{ $event->poster_path }}</span>
+                                    </div>
+                                @else
+                                    <img src="{{ $posterUrl }}"
                                          alt="Event Poster"
-                                         style="width:100%;height:auto;display:block;">
-                                </div>
-                                <div class="mt-2 text-xs text-gray-600">
-                                    Stored at: <span class="font-mono">{{ $event->poster_path }}</span>
-                                </div>
+                                         class="mt-2 rounded-lg border cursor-pointer"
+                                         style="border-color:#EDE7D1;width:100%;height:auto;display:block;"
+                                         onclick="openPosterModal('{{ $posterUrl }}','image')">
+                                    <div class="mt-2 text-xs text-gray-600">
+                                        Click image to preview • <span class="font-mono">{{ $event->poster_path }}</span>
+                                    </div>
+                                @endif
                             @else
-                                <div class="mt-2 text-sm text-gray-600">
-                                    No poster uploaded.
-                                </div>
+                                <div class="mt-2 text-sm text-gray-600">No poster uploaded.</div>
                             @endif
                         </div>
                     </div>
                 </div>
 
-                {{-- Actions (NO nested form) --}}
+                {{-- Actions --}}
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <button type="submit"
@@ -250,7 +273,6 @@
                         </a>
                     </div>
 
-                    {{-- Delete button submits separate form below --}}
                     <button type="submit"
                             form="deleteEventForm"
                             class="px-5 py-2 rounded font-semibold text-white"
@@ -260,7 +282,6 @@
                     </button>
                 </div>
 
-                {{-- Note --}}
                 <div class="rounded-lg p-4 mt-2"
                      style="background:#F6F2E6; border:1px solid #E3C77A;">
                     <div class="text-sm font-semibold" style="color:#0B3D2E;">Posting Reminder</div>
@@ -272,7 +293,6 @@
 
             </form>
 
-            {{-- SEPARATE DELETE FORM (outside the update form) --}}
             <form id="deleteEventForm" method="POST" action="{{ route('portal.events.destroy', $event) }}">
                 @csrf
                 @method('DELETE')
@@ -280,4 +300,54 @@
 
         </div>
     </div>
+
+    {{-- POP-OUT MODAL --}}
+    <div id="posterModal"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70">
+        <div class="relative bg-white rounded-xl shadow-xl max-w-5xl w-full mx-4">
+            <button type="button"
+                    onclick="closePosterModal()"
+                    class="absolute top-3 right-3 text-gray-600 hover:text-black text-2xl font-bold"
+                    aria-label="Close">
+                &times;
+            </button>
+
+            <div id="posterModalContent" class="p-4 max-h-[85vh] overflow-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        function openPosterModal(url, type) {
+            const modal = document.getElementById('posterModal');
+            const content = document.getElementById('posterModalContent');
+
+            content.innerHTML = '';
+
+            if (type === 'pdf') {
+                content.innerHTML = `<iframe src="${url}" style="width:100%; height:75vh;" frameborder="0"></iframe>`;
+            } else {
+                content.innerHTML = `<img src="${url}" style="width:100%; height:auto; display:block; margin:auto;">`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closePosterModal() {
+            const modal = document.getElementById('posterModal');
+            const content = document.getElementById('posterModalContent');
+
+            content.innerHTML = '';
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('posterModal').addEventListener('click', function (e) {
+            if (e.target === this) closePosterModal();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closePosterModal();
+        });
+    </script>
 </x-app-layout>
