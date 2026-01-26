@@ -201,7 +201,7 @@
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <div class="text-sm font-semibold" style="color:#0B3D2E;">Event Poster</div>
-                            <div class="text-xs text-gray-600 mt-1">Optional. JPG/PNG up to 4MB.</div>
+                            <div class="text-xs text-gray-600 mt-1">Optional. JPG/PNG up to 10MB.</div>
                         </div>
                     </div>
 

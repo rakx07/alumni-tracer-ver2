@@ -154,7 +154,7 @@
 
                     <div class="mt-4">
                         <input type="file" name="poster" class="w-full">
-                        <div class="text-xs text-gray-600 mt-1">JPG/PNG up to 4MB.</div>
+                        <div class="text-xs text-gray-600 mt-1">JPG/PNG up to 10MB.</div>
                     </div>
                 </div>
 
