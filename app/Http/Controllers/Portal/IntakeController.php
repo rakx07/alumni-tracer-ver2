@@ -7,6 +7,8 @@ use App\Models\Alumnus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\Program;
+use App\Models\Strand;
 
 class IntakeController extends Controller
 {
@@ -26,21 +28,35 @@ class IntakeController extends Controller
     }
 
     public function form()
-    {
-        $alumnus = Alumnus::with([
-                'educations',
-                'employments',
-                'communityInvolvements',
-                'engagementPreference',
-                'consent'
-            ])
-            ->where('user_id', Auth::id())
-            ->first();
+{
+    $alumnus = Alumnus::with([
+            'educations',
+            'employments',
+            'communityInvolvements',
+            'engagementPreference',
+            'consent'
+        ])
+        ->where('user_id', Auth::id())
+        ->first();
 
-        $user = Auth::user();
+    // ===== NEW =====
+    $programs = Program::active()
+        ->orderBy('category')
+        ->orderBy('name')
+        ->get()
+        ->groupBy('category');
 
-        return view('user.intake', compact('alumnus', 'user'));
-    }
+    $strands = Strand::active()
+        ->orderBy('name')
+        ->get();
+
+    return view('user.intake', compact(
+        'alumnus',
+        'programs',
+        'strands'
+    ));
+}
+
 
     /**
      * Build full name from user name parts:
@@ -80,6 +96,49 @@ class IntakeController extends Controller
             'educations' => ['nullable', 'array'],
             'educations.*.level' => ['required_with:educations', 'string'],
         ]);
+        
+        //Intake validation for educations
+        $educations = $request->input('educations', []);
+
+        foreach ($educations as $idx => $row) {
+
+            $level = $row['level'] ?? null;
+            $didGraduate = $row['did_graduate'] ?? null;
+
+            /* ================= Graduate logic ================= */
+
+            if ($didGraduate === '1' || $didGraduate === 1) {
+                if (empty($row['year_graduated'])) {
+                    return back()->withErrors([
+                        "educations.$idx.year_graduated" =>
+                            'Year Graduated is required if you selected YES.'
+                    ])->withInput();
+                }
+            }
+
+            if ($didGraduate === '0' || $didGraduate === 0) {
+                if (empty($row['last_year_attended'])) {
+                    return back()->withErrors([
+                        "educations.$idx.last_year_attended" =>
+                            'Last School Year Attended is required if you selected NO.'
+                    ])->withInput();
+                }
+            }
+
+            /* ================= Program "Others" ================= */
+
+            if (in_array($level, ['ndmu_college','ndmu_grad_school','ndmu_law'], true)) {
+                if (($row['program_id'] ?? null) === '__other__') {
+                    if (empty(trim((string)($row['specific_program'] ?? '')))) {
+                        return back()->withErrors([
+                            "educations.$idx.specific_program" =>
+                                'Please specify the program when selecting Others.'
+                        ])->withInput();
+                    }
+                }
+            }
+        }
+
 
         DB::transaction(function () use ($request) {
 

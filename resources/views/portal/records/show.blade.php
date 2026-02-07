@@ -128,73 +128,113 @@
             </div>
 
             {{-- III. ACADEMIC --}}
-            <div id="academic" class="bg-white shadow rounded border">
-                <div class="p-6">
-                    <div class="flex justify-between">
-                        <h3 class="text-lg font-semibold">
-                            III. Academic Background ({{ $alumnus->educations->count() }})
-                        </h3>
-                        <a href="{{ $editSectionUrl('academic') }}"
-                           class="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm">
-                            Edit
-                        </a>
+            {{-- III. ACADEMIC --}}
+<div id="academic" class="bg-white shadow rounded border">
+    <div class="p-6">
+        <div class="flex justify-between">
+            <h3 class="text-lg font-semibold">
+                III. Academic Background ({{ $alumnus->educations->count() }})
+            </h3>
+            <a href="{{ $editSectionUrl('academic') }}"
+               class="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm">
+                Edit
+            </a>
+        </div>
+
+        <div class="mt-5 space-y-4">
+            @forelse($alumnus->educations as $e)
+                @php
+                    $level   = $e->level;
+                    $isElem  = $level === 'ndmu_elementary';
+                    $isJhs   = $level === 'ndmu_jhs';
+                    $isShs   = $level === 'ndmu_shs';
+                    $isHigh  = in_array($level, ['ndmu_college','ndmu_grad_school','ndmu_law'], true);
+                    $isPost  = $level === 'post_ndmu';
+
+                    // graduate status label
+                    $gradLabel = is_null($e->did_graduate) ? '—' : ($e->did_graduate ? 'Yes' : 'No');
+
+                    // Year display logic based on did_graduate
+                    $yearGraduated = $e->year_graduated;
+                    $lastAttended  = $e->last_year_attended;
+
+                    // Strand label (prefer master list strand relationship)
+                    $strandLabel = null;
+                    if ($e->strand) {
+                        $strandLabel = trim($e->strand->code.' — '.$e->strand->name);
+                    } elseif (!empty($e->strand_track)) {
+                        $strandLabel = $e->strand_track;
+                    }
+
+                    // Program label (prefer master list program relationship)
+                    $programLabel = null;
+                    if ($e->program) {
+                        $programLabel = trim(($e->program->code ? $e->program->code.' — ' : '').$e->program->name);
+                    } elseif (!empty($e->specific_program)) {
+                        $programLabel = $e->specific_program.' (Others)';
+                    } elseif (!empty($e->degree_program)) {
+                        // legacy fallback if you still have old text
+                        $programLabel = $e->degree_program;
+                    }
+                @endphp
+
+                <div class="border rounded bg-gray-50 p-4">
+                    <div class="font-semibold text-gray-900">
+                        {{ $educationLabels[$level] ?? $level }}
                     </div>
 
-                    <div class="mt-5 space-y-4">
-                        @forelse($alumnus->educations as $e)
-                            @php
-                                $level  = $e->level;
-                                $isSHS  = $level === 'ndmu_shs';
-                                $isHigh = in_array($level, ['ndmu_college','ndmu_grad_school','ndmu_law'], true);
-                                $isPost = $level === 'post_ndmu';
-                            @endphp
-
-                            <div class="border rounded bg-gray-50 p-4">
-                                <div class="font-semibold text-gray-900">
-                                    {{ $educationLabels[$level] ?? $level }}
-                                </div>
-
-                                <div class="text-sm mt-1">
-                                    Student No.: {{ $val($e->student_number) }}
-                                </div>
-
-                                <div class="mt-2 text-sm grid grid-cols-1 md:grid-cols-3 gap-2">
-                                    <div>Entered: {{ $val($e->year_entered) }}</div>
-                                    <div>Graduated: {{ $val($e->year_graduated) }}</div>
-                                    <div>Last Attended: {{ $val($e->last_year_attended) }}</div>
-                                </div>
-
-                                @if($isSHS || $isHigh)
-                                    <div class="mt-3 text-sm">
-                                        <strong>Strand / Track:</strong>
-                                        {{ $val($e->strand_track) }}
-                                    </div>
-                                @endif
-
-                                @if($isHigh)
-                                    <div class="mt-2 text-sm">
-                                        <strong>Degree / Program:</strong>
-                                        {{ $val($e->degree_program) }}
-                                    </div>
-                                @endif
-
-                                @if($isPost)
-                                    <div class="mt-2 text-sm">
-                                        <strong>Institution:</strong>
-                                        {{ $val($e->institution_name) }}<br>
-                                        <strong>Course:</strong>
-                                        {{ $val($e->course_degree) }}
-                                    </div>
-                                @endif
-                            </div>
-                        @empty
-                            <div class="text-sm text-gray-500">
-                                No education records.
-                            </div>
-                        @endforelse
+                    {{-- Did graduate --}}
+                    <div class="text-sm mt-1">
+                        <strong>Graduated:</strong> {{ $gradLabel }}
                     </div>
+
+                    {{-- Year started --}}
+                    <div class="mt-2 text-sm grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div><strong>Year Started:</strong> {{ $val($e->year_entered) }}</div>
+
+                        @if($e->did_graduate === 1 || $e->did_graduate === true)
+                            <div><strong>Year Graduated:</strong> {{ $val($yearGraduated) }}</div>
+                            <div><strong>Last Attended:</strong> —</div>
+                        @elseif($e->did_graduate === 0 || $e->did_graduate === false)
+                            <div><strong>Year Graduated:</strong> —</div>
+                            <div><strong>Last School Year Attended:</strong> {{ $val($lastAttended) }}</div>
+                        @else
+                            <div><strong>Year Graduated:</strong> {{ $val($yearGraduated) }}</div>
+                            <div><strong>Last School Year Attended:</strong> {{ $val($lastAttended) }}</div>
+                        @endif
+                    </div>
+
+                    {{-- SHS Strand --}}
+                    @if($isShs)
+                        <div class="mt-3 text-sm">
+                            <strong>Strand:</strong> {{ $val($strandLabel) }}
+                        </div>
+                    @endif
+
+                    {{-- College / Grad / Law Program --}}
+                    @if($isHigh)
+                        <div class="mt-3 text-sm">
+                            <strong>Program:</strong> {{ $val($programLabel) }}
+                        </div>
+                    @endif
+
+                    {{-- Post-NDMU --}}
+                    @if($isPost)
+                        <div class="mt-3 text-sm">
+                            <strong>Institution:</strong> {{ $val($e->institution_name) }}<br>
+                            <strong>Course/Degree:</strong> {{ $val($e->course_degree) }}
+                        </div>
+                    @endif
                 </div>
-            </div>
+            @empty
+                <div class="text-sm text-gray-500">
+                    No education records.
+                </div>
+            @endforelse
+        </div>
+    </div>
+</div>
+
 
             {{-- IV. EMPLOYMENT --}}
             <div id="employment" class="bg-white shadow rounded border">

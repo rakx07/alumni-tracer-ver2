@@ -49,6 +49,26 @@
 
     {{-- SCRIPT MUST BE AFTER PARTIAL SO WRAPPERS EXIST --}}
     <script>
+        const PROGRAMS_BY_CAT = @json(
+            $programs->map(fn($items) =>
+                $items->map(fn($p) => [
+                    'id'   => $p->id,
+                    'code' => $p->code,
+                    'name' => $p->name,
+                ])
+            )
+        );
+
+        const STRANDS = @json(
+            $strands->map(fn($s) => [
+                'id'   => $s->id,
+                'code' => $s->code,
+                'name' => $s->name,
+            ])
+        );
+
+
+
     document.addEventListener('DOMContentLoaded', () => {
 
         // =========================
@@ -115,39 +135,31 @@
         // =========================
         const EDU_RULES = {
             ndmu_elementary: [
-                'student_number','year_entered','year_graduated','last_year_attended'
+                'did_graduate','year_entered','year_graduated','last_year_attended'
             ],
             ndmu_jhs: [
-                'student_number','year_entered','year_graduated','last_year_attended'
+                'did_graduate','year_entered','year_graduated','last_year_attended'
             ],
             ndmu_shs: [
-                'student_number','year_entered','year_graduated','last_year_attended','strand_track'
+                'did_graduate','year_entered','year_graduated','last_year_attended','strand_id'
             ],
             ndmu_college: [
-                'student_number','year_entered','year_graduated','last_year_attended',
-                'strand_track',
-                'degree_program','thesis_title',
-                'honors_awards','extracurricular_activities','clubs_organizations',
-                'year_completed','scholarship_award'
+                'did_graduate','year_entered','year_graduated','last_year_attended',
+                'program_id','specific_program'
             ],
             ndmu_grad_school: [
-                'student_number','year_entered','year_graduated','last_year_attended',
-                'strand_track',
-                'degree_program','thesis_title',
-                'honors_awards','extracurricular_activities','clubs_organizations',
-                'year_completed','scholarship_award'
+                'did_graduate','year_entered','year_graduated','last_year_attended',
+                'program_id','specific_program'
             ],
             ndmu_law: [
-                'student_number','year_entered','year_graduated','last_year_attended',
-                'strand_track',
-                'degree_program','thesis_title',
-                'honors_awards','extracurricular_activities','clubs_organizations',
-                'year_completed','scholarship_award'
+                'did_graduate','year_entered','year_graduated','last_year_attended',
+                'program_id','specific_program'
             ],
             post_ndmu: [
-                'institution_name','institution_address','course_degree','year_completed','scholarship_award','notes'
+                'institution_name','institution_address','course_degree','year_completed','notes'
             ],
         };
+
 
         function setVisibility(cardEl, allowedKeys = []) {
             const allowed = new Set(allowedKeys);
@@ -178,128 +190,124 @@
         // =========================
         // EDUCATION CARD (with data-field hooks)
         // =========================
-        function educationCard(i, data = {}) {
-            const div = document.createElement('div');
-            div.className = "border rounded p-4 bg-gray-50";
+       function educationCard(i, data = {}) {
+    const div = document.createElement('div');
+    div.className = "border rounded p-4 bg-gray-50";
 
-            div.innerHTML = `
-                <div class="flex items-center justify-between mb-2">
-                    <div class="font-semibold">Education Level</div>
-                    <button type="button" class="text-red-600" data-remove>Remove</button>
-                </div>
+    div.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+            <div class="font-semibold">Education Level</div>
+            <button type="button" class="text-red-600" data-remove>Remove</button>
+        </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
 
-                    <div data-field="level">
-                        <label class="block font-medium">Level</label>
-                        <select data-edu-level name="educations[${i}][level]" class="w-full border rounded p-2" required>
-                            <option value="">-- select --</option>
-                            <option value="ndmu_elementary">NDMU Elementary</option>
-                            <option value="ndmu_jhs">NDMU Junior High School</option>
-                            <option value="ndmu_shs">NDMU Senior High School</option>
-                            <option value="ndmu_college">NDMU College</option>
-                            <option value="ndmu_grad_school">NDMU Graduate School</option>
-                            <option value="ndmu_law">NDMU Law School</option>
-                            <option value="post_ndmu">Education after NDMU</option>
-                        </select>
-                    </div>
+            <div data-field="level">
+                <label class="block font-medium">Level</label>
+                <select data-edu-level name="educations[${i}][level]" class="w-full border rounded p-2" required>
+                    <option value="">-- select --</option>
+                    <option value="ndmu_elementary">NDMU Elementary</option>
+                    <option value="ndmu_jhs">NDMU Junior High School</option>
+                    <option value="ndmu_shs">NDMU Senior High School</option>
+                    <option value="ndmu_college">NDMU College</option>
+                    <option value="ndmu_grad_school">NDMU Graduate School</option>
+                    <option value="ndmu_law">NDMU Law School</option>
+                    <option value="post_ndmu">Education after NDMU</option>
+                </select>
+            </div>
 
-                    <div data-field="student_number">
-                        <label class="block font-medium">Student Number / LRN (if known)</label>
-                        <input name="educations[${i}][student_number]" class="w-full border rounded p-2" value="${data.student_number ?? ''}">
-                    </div>
+            <div data-field="did_graduate">
+                <label class="block font-medium">Did you graduate?</label>
+                <select name="educations[${i}][did_graduate]" class="w-full border rounded p-2">
+                    <option value="">--</option>
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </div>
 
-                    <div data-field="year_entered">
-                        <label class="block font-medium">Year Entered</label>
-                        <input name="educations[${i}][year_entered]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_entered ?? ''}">
-                    </div>
+            <div data-field="year_entered">
+                <label class="block font-medium">Year Started</label>
+                <input name="educations[${i}][year_entered]" class="w-full border rounded p-2"
+                       value="${data.year_entered ?? ''}">
+            </div>
 
-                    <div data-field="year_graduated">
-                        <label class="block font-medium">Year Graduated</label>
-                        <input name="educations[${i}][year_graduated]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_graduated ?? ''}">
-                    </div>
+            <div data-field="year_graduated">
+                <label class="block font-medium">Year Graduated</label>
+                <input name="educations[${i}][year_graduated]" class="w-full border rounded p-2"
+                       value="${data.year_graduated ?? ''}">
+            </div>
 
-                    <div data-field="last_year_attended">
-                        <label class="block font-medium">Last Year Attended</label>
-                        <input name="educations[${i}][last_year_attended]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.last_year_attended ?? ''}">
-                    </div>
+            <div data-field="last_year_attended">
+                <label class="block font-medium">Last School Year Attended</label>
+                <input name="educations[${i}][last_year_attended]" class="w-full border rounded p-2"
+                       value="${data.last_year_attended ?? ''}">
+            </div>
 
-                    <div data-field="strand_track">
-                        <label class="block font-medium">Strand/Track (SHS)</label>
-                        <input name="educations[${i}][strand_track]" class="w-full border rounded p-2" value="${data.strand_track ?? ''}">
-                        <div class="text-xs text-gray-500 mt-1">Optional for College/Grad/Law.</div>
-                    </div>
+            <div data-field="strand_id">
+                <label class="block font-medium">Strand</label>
+                <select name="educations[${i}][strand_id]" class="w-full border rounded p-2">
+                    <option value="">-- select --</option>
+                    ${STRANDS.map(s =>
+                        `<option value="${s.id}">${s.code} — ${s.name}</option>`
+                    ).join('')}
+                </select>
+            </div>
 
-                    <div class="md:col-span-2" data-field="degree_program">
-                        <label class="block font-medium">Degree/Program</label>
-                        <input name="educations[${i}][degree_program]" class="w-full border rounded p-2" value="${data.degree_program ?? ''}">
-                    </div>
+            <div data-field="program_id">
+                <label class="block font-medium">Program</label>
+                <select name="educations[${i}][program_id]" class="w-full border rounded p-2">
+                    <option value="">-- select --</option>
+                </select>
+            </div>
 
-                    <div class="md:col-span-2" data-field="thesis_title">
-                        <label class="block font-medium">Thesis Title (if applicable)</label>
-                        <input name="educations[${i}][thesis_title]" class="w-full border rounded p-2" value="${data.thesis_title ?? ''}">
-                    </div>
+            <div data-field="specific_program">
+                <label class="block font-medium">If Others, specify program</label>
+                <input name="educations[${i}][specific_program]" class="w-full border rounded p-2"
+                       value="${data.specific_program ?? ''}">
+            </div>
+        </div>
+    `;
 
-                    <div class="md:col-span-2" data-field="honors_awards">
-                        <label class="block font-medium">Honors/Awards</label>
-                        <textarea name="educations[${i}][honors_awards]" class="w-full border rounded p-2" rows="2">${data.honors_awards ?? ''}</textarea>
-                    </div>
+    const levelSel = div.querySelector('[data-edu-level]');
+    const programSel = div.querySelector(`select[name="educations[${i}][program_id]"]`);
 
-                    <div class="md:col-span-2" data-field="extracurricular_activities">
-                        <label class="block font-medium">Extracurricular Activities</label>
-                        <textarea name="educations[${i}][extracurricular_activities]" class="w-full border rounded p-2" rows="2">${data.extracurricular_activities ?? ''}</textarea>
-                    </div>
+    function populatePrograms() {
+        const level = levelSel.value;
+        const cat =
+            level === 'ndmu_college' ? 'college' :
+            level === 'ndmu_grad_school' ? 'grad_school' :
+            level === 'ndmu_law' ? 'law' : null;
 
-                    <div class="md:col-span-2" data-field="clubs_organizations">
-                        <label class="block font-medium">Clubs/Organizations Joined</label>
-                        <textarea name="educations[${i}][clubs_organizations]" class="w-full border rounded p-2" rows="2">${data.clubs_organizations ?? ''}</textarea>
-                    </div>
-
-                    <div data-field="year_completed">
-                        <label class="block font-medium">Year Completed</label>
-                        <input name="educations[${i}][year_completed]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_completed ?? ''}">
-                    </div>
-
-                    <div data-field="scholarship_award">
-                        <label class="block font-medium">Scholarship/Award</label>
-                        <input name="educations[${i}][scholarship_award]" class="w-full border rounded p-2" value="${data.scholarship_award ?? ''}">
-                    </div>
-
-                    <!-- Post-NDMU -->
-                    <div class="md:col-span-2" data-field="institution_name">
-                        <label class="block font-medium">Institution Name</label>
-                        <input name="educations[${i}][institution_name]" class="w-full border rounded p-2" value="${data.institution_name ?? ''}">
-                    </div>
-
-                    <div class="md:col-span-2" data-field="institution_address">
-                        <label class="block font-medium">Institution Address</label>
-                        <input name="educations[${i}][institution_address]" class="w-full border rounded p-2" value="${data.institution_address ?? ''}">
-                    </div>
-
-                    <div class="md:col-span-2" data-field="course_degree">
-                        <label class="block font-medium">Course / Degree (Post-NDMU)</label>
-                        <input name="educations[${i}][course_degree]" class="w-full border rounded p-2" value="${data.course_degree ?? ''}">
-                    </div>
-
-                    <div class="md:col-span-2" data-field="notes">
-                        <label class="block font-medium">Notes</label>
-                        <textarea name="educations[${i}][notes]" class="w-full border rounded p-2" rows="2">${data.notes ?? ''}</textarea>
-                    </div>
-
-                </div>
-            `;
-
-            const sel = div.querySelector('select[data-edu-level]');
-            sel.value = data.level ?? '';
-
-            // Apply visibility (now + on change)
-            applyEducationVisibility(div);
-            sel.addEventListener('change', () => applyEducationVisibility(div));
-
-            div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
-
-            return div;
+        if (!cat || !PROGRAMS_BY_CAT[cat]) {
+            programSel.innerHTML = `<option value="">-- select --</option>`;
+            return;
         }
+
+        programSel.innerHTML =
+            `<option value="">-- select --</option>` +
+            PROGRAMS_BY_CAT[cat].map(p =>
+                `<option value="${p.id}">${p.code ? p.code+' — ' : ''}${p.name}</option>`
+            ).join('') +
+            `<option value="__other__">Others (Specify)</option>`;
+    }
+
+    levelSel.value = data.level ?? '';
+    populatePrograms();
+
+    programSel.value = data.program_id ?? (
+        data.specific_program ? '__other__' : ''
+    );
+
+    applyEducationVisibility(div);
+    levelSel.addEventListener('change', () => {
+        populatePrograms();
+        applyEducationVisibility(div);
+    });
+
+    div.querySelector('[data-remove]').onclick = () => div.remove();
+    return div;
+}
+
 
         // =========================
         // EMPLOYMENT CARD (unchanged)
