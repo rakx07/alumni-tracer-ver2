@@ -49,20 +49,8 @@
 
     {{-- SCRIPT MUST BE AFTER PARTIAL SO WRAPPERS EXIST --}}
     <script>
-    const PROGRAMS_BY_CAT = {!! $programs->map(fn($items) =>
-    $items->map(fn($p) => [
-        'id'   => $p->id,
-        'code' => $p->code,
-        'name' => $p->name,
-    ])
-)->toJson() !!};
-
-const STRANDS = {!! $strands->map(fn($s) => [
-    'id'   => $s->id,
-    'code' => $s->code,
-    'name' => $s->name,
-])->toJson() !!};
-
+    const PROGRAMS_BY_CAT = @json($programs_by_cat);
+    const STRANDS = @json($strands_list);
 
 
     document.addEventListener('DOMContentLoaded', () => {

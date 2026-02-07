@@ -27,6 +27,37 @@ class IntakeController extends Controller
         });
     }
 
+// public function form()
+// {
+//     $alumnus = Alumnus::with([
+//         'educations','employments','communityInvolvements','engagementPreference','consent'
+//     ])->where('user_id', Auth::id())->first();
+
+//     $user = Auth::user();
+
+//     $programs_by_cat = Program::where('is_active', true)
+//         ->orderBy('name')
+//         ->get()
+//         ->groupBy('category')
+//         ->map(fn($items) => $items->map(fn($p) => [
+//             'id' => $p->id,
+//             'code' => $p->code,
+//             'name' => $p->name,
+//         ]))
+//         ->toArray(); // make it plain array for clean JSON
+
+//     $strands_list = Strand::where('is_active', true)
+//         ->orderBy('name')
+//         ->get()
+//         ->map(fn($s) => [
+//             'id' => $s->id,
+//             'code' => $s->code,
+//             'name' => $s->name,
+//         ])
+//         ->toArray();
+
+//     return view('user.intake', compact('alumnus', 'user', 'programs_by_cat', 'strands_list'));
+// }
 public function form()
 {
     $alumnus = Alumnus::with([
