@@ -49,23 +49,19 @@
 
     {{-- SCRIPT MUST BE AFTER PARTIAL SO WRAPPERS EXIST --}}
     <script>
-        const PROGRAMS_BY_CAT = @json(
-            $programs->map(fn($items) =>
-                $items->map(fn($p) => [
-                    'id'   => $p->id,
-                    'code' => $p->code,
-                    'name' => $p->name,
-                ])
-            )
-        );
+    const PROGRAMS_BY_CAT = {!! $programs->map(fn($items) =>
+    $items->map(fn($p) => [
+        'id'   => $p->id,
+        'code' => $p->code,
+        'name' => $p->name,
+    ])
+)->toJson() !!};
 
-        const STRANDS = @json(
-            $strands->map(fn($s) => [
-                'id'   => $s->id,
-                'code' => $s->code,
-                'name' => $s->name,
-            ])
-        );
+const STRANDS = {!! $strands->map(fn($s) => [
+    'id'   => $s->id,
+    'code' => $s->code,
+    'name' => $s->name,
+])->toJson() !!};
 
 
 

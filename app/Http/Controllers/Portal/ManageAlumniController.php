@@ -11,6 +11,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AlumniRecordExport;
 
+use App\Models\Program;
+use App\Models\Strand;
+
 class ManageAlumniController extends Controller
 {
     public function __construct()
@@ -101,18 +104,29 @@ class ManageAlumniController extends Controller
      * EDIT
      * ========================= */
     public function edit(Alumnus $alumnus)
-    {
-        $alumnus->load([
-            'educations.program',
-            'educations.strand',
-            'employments',
-            'communityInvolvements',
-            'engagementPreference',
-            'consent',
-        ]);
+{
+    $alumnus->load([
+        'educations.program',
+        'educations.strand',
+        'employments',
+        'communityInvolvements',
+        'engagementPreference',
+        'consent',
+    ]);
 
-        return view('portal.records.edit', compact('alumnus'));
-    }
+    $programs = Program::active()
+        ->orderBy('category')
+        ->orderBy('name')
+        ->get()
+        ->groupBy('category');
+
+    $strands = Strand::active()
+        ->orderBy('name')
+        ->get();
+
+    return view('portal.records.edit', compact('alumnus', 'programs', 'strands'));
+}
+
 
     /* =========================
      * UPDATE
@@ -134,9 +148,28 @@ class ManageAlumniController extends Controller
         $alumnus->communityInvolvements()->delete();
 
         foreach ($request->input('educations', []) as $row) {
-            if (empty($row['level'])) continue;
-            $alumnus->educations()->create($row);
-        }
+    if (empty($row['level'])) continue;
+
+    // Normalize Others
+    if (($row['program_id'] ?? null) === '__other__') {
+        $row['program_id'] = null;
+        $row['specific_program'] = trim((string)($row['specific_program'] ?? '')) ?: null;
+    } else {
+        // If program selected, wipe specific_program
+        $row['specific_program'] = null;
+    }
+
+    // Normalize graduate year logic
+    if (($row['did_graduate'] ?? null) === '1' || ($row['did_graduate'] ?? null) === 1) {
+        $row['last_year_attended'] = null;
+    }
+    if (($row['did_graduate'] ?? null) === '0' || ($row['did_graduate'] ?? null) === 0) {
+        $row['year_graduated'] = null;
+    }
+
+    $alumnus->educations()->create($row);
+}
+
 
         foreach ($request->input('employments', []) as $row) {
             $hasAny = collect($row)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();

@@ -27,34 +27,36 @@ class IntakeController extends Controller
         });
     }
 
-    public function form()
+public function form()
 {
     $alumnus = Alumnus::with([
-            'educations',
-            'employments',
-            'communityInvolvements',
-            'engagementPreference',
-            'consent'
-        ])
-        ->where('user_id', Auth::id())
-        ->first();
+        'educations','employments','communityInvolvements','engagementPreference','consent'
+    ])->where('user_id', Auth::id())->first();
 
-    // ===== NEW =====
-    $programs = Program::active()
-        ->orderBy('category')
+    $user = Auth::user();
+
+    $programs_by_cat = Program::where('is_active', true)
         ->orderBy('name')
         ->get()
-        ->groupBy('category');
+        ->groupBy('category')
+        ->map(fn($items) => $items->map(fn($p) => [
+            'id' => $p->id,
+            'code' => $p->code,
+            'name' => $p->name,
+        ]))
+        ->toArray(); // make it plain array for clean JSON
 
-    $strands = Strand::active()
+    $strands_list = Strand::where('is_active', true)
         ->orderBy('name')
-        ->get();
+        ->get()
+        ->map(fn($s) => [
+            'id' => $s->id,
+            'code' => $s->code,
+            'name' => $s->name,
+        ])
+        ->toArray();
 
-    return view('user.intake', compact(
-        'alumnus',
-        'programs',
-        'strands'
-    ));
+    return view('user.intake', compact('alumnus', 'user', 'programs_by_cat', 'strands_list'));
 }
 
 
