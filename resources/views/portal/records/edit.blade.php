@@ -1,4 +1,4 @@
-{{-- resources/views/portals/records/edit.blade.php --}}
+{{-- resources/views/portal/records/edit.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
@@ -107,24 +107,9 @@
         const existingEmployments = @json(old('employments', $alumnus?->employments?->toArray() ?? []));
         const existingCommunity   = @json(old('community',   $alumnus?->communityInvolvements?->toArray() ?? []));
 
-        // ========= PROGRAMS + STRANDS FROM IT ADMIN =========
-        const PROGRAMS_BY_CAT = @json(
-            ($programs ?? collect())->map(fn($items) =>
-                $items->map(fn($p) => [
-                    'id'   => $p->id,
-                    'code' => $p->code,
-                    'name' => $p->name,
-                ])
-            )
-        );
-
-        const STRANDS = @json(
-            ($strands ?? collect())->map(fn($s) => [
-                'id'   => $s->id,
-                'code' => $s->code,
-                'name' => $s->name,
-            ])
-        );
+        // ========= SAFE DATA FROM CONTROLLER (NO MAP/FN IN BLADE) =========
+        const PROGRAMS_BY_CAT = @json($programs_by_cat ?? []);
+        const STRANDS         = @json($strands_list ?? []);
 
         // ========= DOM WRAPPERS =========
         const educationWrap  = document.getElementById('education-wrap');
@@ -195,7 +180,6 @@
                 const show = allowed.has(key);
                 wrapper.style.display = show ? '' : 'none';
 
-                // Clear when hidden
                 if (!show) {
                     wrapper.querySelectorAll('input, textarea, select').forEach(el => {
                         if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
@@ -211,7 +195,6 @@
 
             const yg = cardEl.querySelector('[data-field="year_graduated"]');
             const la = cardEl.querySelector('[data-field="last_year_attended"]');
-
             if (!yg || !la) return;
 
             if (gradVal === '1') {
@@ -223,21 +206,11 @@
                 la.style.display = '';
                 yg.querySelectorAll('input').forEach(i => i.value = '');
             } else {
-                // if unset, show both (admin can decide)
                 yg.style.display = '';
                 la.style.display = '';
             }
         }
 
-        function applyEducationVisibility(cardEl) {
-            const levelSel = cardEl.querySelector('select[data-edu-level]');
-            const level = levelSel ? levelSel.value : '';
-            setVisibility(cardEl, EDU_RULES[level] || []);
-            applyGraduateLogic(cardEl);
-            applyProgramOthersLogic(cardEl);
-        }
-
-        // ========= PROGRAMS POPULATION =========
         function categoryForLevel(level) {
             if (level === 'ndmu_college') return 'college';
             if (level === 'ndmu_grad_school') return 'grad_school';
@@ -247,13 +220,12 @@
 
         function populatePrograms(programSelectEl, level) {
             const cat = categoryForLevel(level);
-            const list = cat && PROGRAMS_BY_CAT[cat] ? PROGRAMS_BY_CAT[cat] : [];
+            const list = (cat && PROGRAMS_BY_CAT[cat]) ? PROGRAMS_BY_CAT[cat] : [];
 
             let html = `<option value="">-- select --</option>`;
             list.forEach(p => {
                 html += `<option value="${p.id}">${p.code ? (p.code + ' — ') : ''}${p.name}</option>`;
             });
-
             html += `<option value="__other__">Others (Specify)</option>`;
             programSelectEl.innerHTML = html;
         }
@@ -269,6 +241,14 @@
             if (!showOther) {
                 otherWrap.querySelectorAll('input, textarea').forEach(el => el.value = '');
             }
+        }
+
+        function applyEducationVisibility(cardEl) {
+            const levelSel = cardEl.querySelector('select[data-edu-level]');
+            const level = levelSel ? levelSel.value : '';
+            setVisibility(cardEl, EDU_RULES[level] || []);
+            applyGraduateLogic(cardEl);
+            applyProgramOthersLogic(cardEl);
         }
 
         // ========= EDUCATION CARD =========
@@ -328,7 +308,6 @@
                                value="${data.last_year_attended ?? ''}">
                     </div>
 
-                    {{-- SHS Strand (master list) --}}
                     <div data-field="strand_id">
                         <label class="block font-medium">Strand (Master List)</label>
                         <select name="educations[${i}][strand_id]" class="w-full border rounded p-2" data-strand>
@@ -338,14 +317,12 @@
                         <div class="text-xs text-gray-500 mt-1">If not listed, you can use “Strand/Track (text)” below.</div>
                     </div>
 
-                    {{-- Old text fallback --}}
                     <div data-field="strand_track">
                         <label class="block font-medium">Strand/Track (text)</label>
                         <input name="educations[${i}][strand_track]" class="w-full border rounded p-2"
                                value="${data.strand_track ?? ''}">
                     </div>
 
-                    {{-- College/Grad/Law Programs (master list) --}}
                     <div data-field="program_id">
                         <label class="block font-medium">Program (Master List)</label>
                         <select data-program name="educations[${i}][program_id]" class="w-full border rounded p-2">
@@ -359,7 +336,6 @@
                                value="${data.specific_program ?? ''}">
                     </div>
 
-                    {{-- Post-NDMU --}}
                     <div class="md:col-span-2" data-field="institution_name">
                         <label class="block font-medium">Institution Name</label>
                         <input name="educations[${i}][institution_name]" class="w-full border rounded p-2"
@@ -396,14 +372,11 @@
             const gradSel    = div.querySelector('select[data-did-graduate]');
             const programSel = div.querySelector('select[data-program]');
 
-            // Set values
             levelSel.value = data.level ?? '';
             gradSel.value  = (data.did_graduate ?? '') === null ? '' : String(data.did_graduate ?? '');
 
-            // Programs: populate by level
             populatePrograms(programSel, levelSel.value);
 
-            // If has program_id use it; else if has specific_program force __other__
             if (data.program_id) {
                 programSel.value = String(data.program_id);
             } else if (data.specific_program) {
@@ -412,18 +385,13 @@
                 programSel.value = '';
             }
 
-            // Strand dropdown
             const strandSel = div.querySelector('select[data-strand]');
-            if (strandSel) {
-                strandSel.value = data.strand_id ? String(data.strand_id) : '';
-            }
+            if (strandSel) strandSel.value = data.strand_id ? String(data.strand_id) : '';
 
-            // Visibility now and on change
             applyEducationVisibility(div);
 
             levelSel.addEventListener('change', () => {
                 populatePrograms(programSel, levelSel.value);
-                // reset program selection
                 programSel.value = '';
                 applyEducationVisibility(div);
             });
@@ -436,7 +404,7 @@
             return div;
         }
 
-        // ========= EMPLOYMENT CARD (same as yours) =========
+        // ========= EMPLOYMENT CARD =========
         function employmentCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";
@@ -500,7 +468,7 @@
             return div;
         }
 
-        // ========= COMMUNITY CARD (same as yours) =========
+        // ========= COMMUNITY CARD =========
         function communityCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";

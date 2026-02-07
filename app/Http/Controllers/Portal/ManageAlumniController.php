@@ -103,29 +103,65 @@ class ManageAlumniController extends Controller
     /* =========================
      * EDIT
      * ========================= */
-    public function edit(Alumnus $alumnus)
-{
-    $alumnus->load([
-        'educations.program',
-        'educations.strand',
-        'employments',
-        'communityInvolvements',
-        'engagementPreference',
-        'consent',
-    ]);
+//     public function edit(Alumnus $alumnus)
+// {
+//     $alumnus->load([
+//         'educations.program',
+//         'educations.strand',
+//         'employments',
+//         'communityInvolvements',
+//         'engagementPreference',
+//         'consent',
+//     ]);
 
-    $programs = Program::active()
-        ->orderBy('category')
+//     $programs = Program::active()
+//         ->orderBy('category')
+//         ->orderBy('name')
+//         ->get()
+//         ->groupBy('category');
+
+//     $strands = Strand::active()
+//         ->orderBy('name')
+//         ->get();
+
+//     return view('portal.records.edit', compact('alumnus', 'programs', 'strands'));
+// }
+public function edit(Alumnus $alumnus)
+{
+    $alumnus->load(['educations','employments','communityInvolvements','engagementPreference','consent']);
+
+    // Programs grouped by category (plain array for @json)
+    $programs_by_cat = \App\Models\Program::where('is_active', true)
         ->orderBy('name')
         ->get()
-        ->groupBy('category');
+        ->groupBy('category')
+        ->map(function ($items) {
+            return $items->map(function ($p) {
+                return [
+                    'id'   => $p->id,
+                    'code' => $p->code,
+                    'name' => $p->name,
+                ];
+            })->values();
+        })
+        ->toArray();
 
-    $strands = Strand::active()
+    // Strands list (plain array for @json)
+    $strands_list = \App\Models\Strand::where('is_active', true)
         ->orderBy('name')
-        ->get();
+        ->get()
+        ->map(function ($s) {
+            return [
+                'id'   => $s->id,
+                'code' => $s->code,
+                'name' => $s->name,
+            ];
+        })
+        ->toArray();
 
-    return view('portal.records.edit', compact('alumnus', 'programs', 'strands'));
+    return view('portal.records.edit', compact('alumnus', 'programs_by_cat', 'strands_list'));
 }
+
 
 
     /* =========================
