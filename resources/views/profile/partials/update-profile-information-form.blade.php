@@ -114,15 +114,15 @@
                 Save Changes
             </button>
 
-            @if (session('status') === 'profile-updated')
+            @if (session('status') === 'password-updated')
                 <p
                     x-data="{ show: true }"
                     x-show="show"
                     x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
+                    x-init="setTimeout(() => show = false, 2500)"
+                    class="text-sm font-semibold text-green-700"
                 >
-                    Saved.
+                    Password changed successfully.
                 </p>
             @endif
         </div>

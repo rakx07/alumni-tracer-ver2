@@ -51,20 +51,29 @@ class ProfileController extends Controller
     }
 
 
-    public function password(Request $request)
-    {
-        $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-        ]);
+public function password(Request $request)
+{
+    dd('HIT ProfileController@password', auth()->id(), auth()->user()?->email);
+    $request->validate([
+        'current_password' => ['required', 'current_password'],
+        'password' => ['required', 'confirmed', Password::defaults()],
+    ]);
 
-        $request->user()->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-            'must_change_password' => false, // ✅ clear flag after change
-        ]);
+    $user = $request->user();
 
-        return back()->with('status', 'password-updated');
-    }
+    \Log::info('PROFILE PASSWORD HIT', [
+        'user_id' => $user->id,
+        'email'   => $user->email,
+    ]);
+
+    $user->forceFill([
+        'password' => Hash::make($request->password),
+        'must_change_password' => 0,
+    ])->save();
+
+    return back()->with('status', 'password-updated');
+}
+
 
 
     public function destroy(Request $request)

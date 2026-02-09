@@ -12,12 +12,20 @@ class ForcePasswordChange
         $user = $request->user();
 
         if ($user && $user->must_change_password) {
-            // allow profile/password + logout
-            if ($request->routeIs('profile.*') || $request->routeIs('logout')) {
+
+            // ✅ Allow routes needed to change password + logout
+            if (
+                $request->routeIs('profile.*') ||
+                $request->routeIs('password.update') ||   // PUT /password (Breeze update-password form)
+                $request->routeIs('password.*') ||        // (optional) allow reset flows
+                $request->routeIs('logout')
+            ) {
                 return $next($request);
             }
 
-            return redirect()->route('profile.edit')->with('status', 'password-change-required');
+            return redirect()
+                ->route('profile.edit')
+                ->with('status', 'password-change-required');
         }
 
         return $next($request);

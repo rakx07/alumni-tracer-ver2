@@ -9,6 +9,7 @@ use App\Http\Controllers\ITAdmin\CaptchaSettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ITAdmin\UserManagementController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\Portal\AlumniEncodingController;
 
 Route::get('/', fn () => view('welcome'));
 
@@ -78,5 +79,32 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
         Route::put('/{event}', [EventController::class, 'update'])->name('update');
         Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
     });
+
+    //This is added for alumni_encoding
+    Route::middleware(['auth','role:alumni_officer,it_admin,admin'])
+    ->prefix('portal/alumni-encoding')
+    ->name('portal.alumni_encoding.')
+    ->group(function () {
+
+        Route::get('/', [AlumniEncodingController::class, 'index'])->name('index');
+        Route::get('/create', [AlumniEncodingController::class, 'create'])->name('create');
+        Route::post('/', [AlumniEncodingController::class, 'store'])->name('store');
+
+        Route::get('/{alumnus}/edit', [AlumniEncodingController::class, 'edit'])->name('edit');
+        Route::put('/{alumnus}', [AlumniEncodingController::class, 'update'])->name('update');
+
+        // user actions
+        Route::post('/{alumnus}/link-user', [AlumniEncodingController::class, 'linkUser'])->name('link_user');
+        Route::put('/{alumnus}/user', [AlumniEncodingController::class, 'updateUserBasic'])->name('user_update');
+
+        // workflow
+        Route::post('/{alumnus}/submit', [AlumniEncodingController::class, 'submit'])->name('submit');
+        Route::post('/{alumnus}/validate', [AlumniEncodingController::class, 'validateRecord'])->name('validate');
+        Route::post('/{alumnus}/return', [AlumniEncodingController::class, 'returnForRevision'])->name('return');
+
+        // audit viewer
+        Route::get('/{alumnus}/audit', [AlumniEncodingController::class, 'audit'])->name('audit');
+    });
+
 
 require __DIR__.'/auth.php';

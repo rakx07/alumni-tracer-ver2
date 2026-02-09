@@ -35,7 +35,8 @@
                 @csrf
 
                 {{-- THIS LOADS YOUR PARTIAL --}}
-                @include('user._intake_form', ['alumnus' => $alumnus])
+                 @include('user._intake_form', ['alumnus' => $alumnus])
+
 
                 <div class="mt-6">
                     <button class="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">

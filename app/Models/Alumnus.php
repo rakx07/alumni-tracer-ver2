@@ -26,6 +26,11 @@ class Alumnus extends Model
         'facebook',
         'nationality',
         'religion',
+        'encoded_by',
+        'encoding_mode',
+        'record_status',
+        'validated_by',
+        'validated_at',
     ];
 
     public function user()
@@ -57,4 +62,12 @@ class Alumnus extends Model
     {
         return $this->hasOne(AlumniConsent::class, 'alumnus_id');
     }
+    protected $casts = [
+    'birthdate' => 'date',
+    'validated_at' => 'datetime',
+    ];
+public function audits()
+{
+    return $this->hasMany(AlumniAudit::class, 'alumnus_id');
+}
 }
