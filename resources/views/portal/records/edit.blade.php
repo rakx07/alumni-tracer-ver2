@@ -1,9 +1,9 @@
 {{-- resources/views/portal/records/edit.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
                     Edit Alumni Record #{{ $alumnus->id }}
                 </h2>
                 <div class="text-sm text-gray-600">
@@ -13,21 +13,122 @@
 
             <div class="flex items-center gap-2">
                 <a href="{{ route('portal.records.show', $alumnus) }}"
-                   class="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900">
+                   class="inline-flex items-center px-4 py-2 rounded-lg font-semibold border shadow-sm"
+                   style="border-color:#E3C77A; color:#0B3D2E; background:#FFFBF0;">
                     Back
                 </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-8">
+    <style>
+        :root{
+            --ndmu-green:#0B3D2E;
+            --ndmu-gold:#E3C77A;
+            --paper:#FFFBF0;
+            --page:#FAFAF8;
+            --line:#EDE7D1;
+        }
+
+        .strip{
+            border:1px solid var(--line);
+            border-radius: 18px;
+            overflow:hidden;
+            background:#fff;
+            box-shadow: 0 10px 24px rgba(2,6,23,.06);
+        }
+        .strip-top{
+            padding: 14px 16px;
+            background: var(--ndmu-green);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+        }
+        .strip-left{
+            display:flex;
+            align-items:center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .gold-bar{
+            width: 6px;
+            height: 28px;
+            background: var(--ndmu-gold);
+            border-radius: 999px;
+            flex: 0 0 auto;
+        }
+        .strip-title{
+            color:#fff;
+            font-weight: 900;
+            letter-spacing: .2px;
+            line-height: 1.2;
+        }
+        .strip-sub{
+            color: rgba(255,255,255,.78);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .panel{
+            background:#fff;
+            border:1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 10px 24px rgba(2,6,23,.06);
+        }
+
+        .jump a{
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: #fff;
+            font-weight: 800;
+            font-size: 12px;
+            color: rgba(15,23,42,.78);
+            transition: .15s ease;
+        }
+        .jump a:hover{
+            background: var(--paper);
+            border-color: rgba(227,199,122,.85);
+            color: var(--ndmu-green);
+        }
+
+        .btn-ndmu{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 900;
+            transition: .15s ease;
+            white-space: nowrap;
+            box-shadow: 0 6px 14px rgba(2,6,23,.06);
+        }
+        .btn-primary{ background: var(--ndmu-green); color:#fff; }
+        .btn-primary:hover{ filter: brightness(.95); }
+        .btn-outline{
+            background: var(--paper);
+            color: var(--ndmu-green);
+            border: 1px solid var(--ndmu-gold);
+        }
+        .btn-outline:hover{ filter: brightness(.98); }
+
+        /* gentle highlight when auto-scrolling */
+        .ndmu-highlight{
+            box-shadow: 0 0 0 3px rgba(227,199,122,.55), 0 10px 24px rgba(2,6,23,.06);
+            border-radius: 18px;
+        }
+    </style>
+
+    <div class="py-8" style="background:var(--page);">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-4">
 
             {{-- ERRORS --}}
             @if ($errors->any())
-                <div class="p-4 bg-red-100 border border-red-300 rounded">
-                    <div class="font-semibold mb-2">Please fix the following:</div>
-                    <ul class="list-disc ml-6 text-sm">
+                <div class="panel p-4" style="border-color:rgba(248,113,113,.45); background:rgba(254,242,242,1);">
+                    <div class="font-extrabold text-red-800 mb-2">Please fix the following:</div>
+                    <ul class="list-disc ml-6 text-sm text-red-800">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -37,22 +138,43 @@
 
             {{-- SUCCESS --}}
             @if(session('success'))
-                <div class="p-3 bg-green-100 border border-green-300 rounded">
-                    {{ session('success') }}
+                <div class="panel p-4" style="border-color:rgba(34,197,94,.30); background:rgba(34,197,94,.06);">
+                    <div class="font-semibold" style="color:rgba(22,101,52,1);">
+                        {{ session('success') }}
+                    </div>
                 </div>
             @endif
 
             {{-- QUICK NAV --}}
-            <div class="bg-white shadow rounded border border-gray-100 p-4">
-                <div class="text-sm font-semibold text-gray-700 mb-2">Jump to section:</div>
-                <div class="flex flex-wrap gap-2 text-sm">
-                    <a href="#personal" class="px-3 py-1.5 bg-gray-100 rounded hover:bg-gray-200">Personal</a>
-                    <a href="#addresses" class="px-3 py-1.5 bg-gray-100 rounded hover:bg-gray-200">Addresses</a>
-                    <a href="#academic" class="px-3 py-1.5 bg-gray-100 rounded hover:bg-gray-200">Academic</a>
-                    <a href="#employment" class="px-3 py-1.5 bg-gray-100 rounded hover:bg-gray-200">Employment</a>
-                    <a href="#community" class="px-3 py-1.5 bg-gray-100 rounded hover:bg-gray-200">Community</a>
-                    <a href="#engagement" class="px-3 py-1.5 bg-gray-100 rounded hover:bg-gray-200">Engagement</a>
-                    <a href="#consent" class="px-3 py-1.5 bg-gray-100 rounded hover:bg-gray-200">Consent</a>
+            <div class="strip">
+                <div class="strip-top">
+                    <div class="strip-left">
+                        <div class="gold-bar"></div>
+                        <div>
+                            <div class="strip-title">Jump to Section</div>
+                            <div class="strip-sub">Click a section to scroll inside the form.</div>
+                        </div>
+                    </div>
+
+                    <div class="hidden sm:flex items-center gap-2">
+                        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-extrabold"
+                              style="background:rgba(255,251,240,.95); border:1px solid rgba(227,199,122,.85); color:var(--ndmu-green);">
+                            <span class="inline-block h-2 w-2 rounded-full" style="background:var(--ndmu-green);"></span>
+                            Edit Mode
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-4">
+                    <div class="jump flex flex-wrap gap-2 text-sm">
+                        <a href="#personal">Personal</a>
+                        <a href="#addresses">Addresses</a>
+                        <a href="#academic">Academic</a>
+                        <a href="#employment">Employment</a>
+                        <a href="#community">Community</a>
+                        <a href="#engagement">Engagement</a>
+                        <a href="#consent">Consent</a>
+                    </div>
                 </div>
             </div>
 
@@ -60,19 +182,19 @@
                 @csrf
                 @method('PUT')
 
-                <div class="bg-white shadow rounded border border-gray-100 p-6">
-                    {{-- Reuse intake form UI (wrappers exist here) --}}
+                <div class="panel p-6">
+                    {{-- Reuse intake form UI --}}
                     @include('user._intake_form', ['alumnus' => $alumnus])
                 </div>
 
                 <div class="mt-4 flex items-center justify-end gap-2">
                     <a href="{{ route('portal.records.show', $alumnus) }}"
-                       class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800">
+                       class="btn-ndmu btn-outline">
                         Cancel
                     </a>
 
                     <button type="submit"
-                            class="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                            class="btn-ndmu btn-primary">
                         Save Changes
                     </button>
                 </div>
@@ -89,12 +211,10 @@
             const el = document.getElementById(section);
             if (!el) return;
 
-            el.classList.add('ring-2','ring-indigo-500','ring-offset-2');
+            el.classList.add('ndmu-highlight');
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-            setTimeout(() => {
-                el.classList.remove('ring-2','ring-indigo-500','ring-offset-2');
-            }, 2500);
+            setTimeout(() => el.classList.remove('ndmu-highlight'), 2500);
         })();
     </script>
 
@@ -107,7 +227,7 @@
         const existingEmployments = @json(old('employments', $alumnus?->employments?->toArray() ?? []));
         const existingCommunity   = @json(old('community',   $alumnus?->communityInvolvements?->toArray() ?? []));
 
-        // ========= SAFE DATA FROM CONTROLLER (NO MAP/FN IN BLADE) =========
+        // ========= SAFE DATA FROM CONTROLLER =========
         const PROGRAMS_BY_CAT = @json($programs_by_cat ?? []);
         const STRANDS         = @json($strands_list ?? []);
 
@@ -258,8 +378,8 @@
 
             div.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
-                    <div class="font-semibold">Education Level</div>
-                    <button type="button" class="text-red-600" data-remove>Remove</button>
+                    <div class="font-semibold" style="color:var(--ndmu-green)">Education</div>
+                    <button type="button" class="text-red-600 font-semibold" data-remove>Remove</button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -314,7 +434,7 @@
                             <option value="">-- select --</option>
                             ${STRANDS.map(s => `<option value="${s.id}">${s.code} — ${s.name}</option>`).join('')}
                         </select>
-                        <div class="text-xs text-gray-500 mt-1">If not listed, you can use “Strand/Track (text)” below.</div>
+                        <div class="text-xs text-gray-500 mt-1">If not listed, use “Strand/Track (text)”.</div>
                     </div>
 
                     <div data-field="strand_track">
@@ -410,8 +530,8 @@
             div.className = "border rounded p-4 bg-gray-50";
             div.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
-                    <div class="font-semibold">Employment</div>
-                    <button type="button" class="text-red-600" data-remove>Remove</button>
+                    <div class="font-semibold" style="color:var(--ndmu-green)">Employment</div>
+                    <button type="button" class="text-red-600 font-semibold" data-remove>Remove</button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -474,8 +594,8 @@
             div.className = "border rounded p-4 bg-gray-50";
             div.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
-                    <div class="font-semibold">Organization / Association</div>
-                    <button type="button" class="text-red-600" data-remove>Remove</button>
+                    <div class="font-semibold" style="color:var(--ndmu-green)">Organization / Association</div>
+                    <button type="button" class="text-red-600 font-semibold" data-remove>Remove</button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">

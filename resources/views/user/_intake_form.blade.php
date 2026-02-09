@@ -8,6 +8,31 @@
 
     $pref    = $alumnus->engagementPreference ?? null;
     $consent = $alumnus->consent ?? null;
+
+    $u = auth()->user();
+
+    // Build default full name from the USER account name parts (users table has first/middle/last)
+    $defaultFullName = trim(collect([
+        $u?->first_name,
+        $u?->middle_name,
+        $u?->last_name,
+    ])->filter()->implode(' '));
+
+    // Alumni table currently has ONLY full_name, so we keep writing to full_name (hidden),
+    // but we display first/middle/last inputs in the UI.
+    $fullNameValue = old('full_name', $alumnus->full_name ?? $defaultFullName);
+
+    // Prefill name fields from USER columns first. If blank, best-effort split from full_name.
+    $first  = old('first_name',  $u?->first_name ?? '');
+    $middle = old('middle_name', $u?->middle_name ?? '');
+    $last   = old('last_name',   $u?->last_name ?? '');
+
+    if (!$first && !$last && $fullNameValue) {
+        $parts = preg_split('/\s+/', trim($fullNameValue));
+        $first = $parts[0] ?? '';
+        $last  = count($parts) > 1 ? $parts[count($parts)-1] : '';
+        $middle = count($parts) > 2 ? implode(' ', array_slice($parts, 1, -1)) : '';
+    }
 @endphp
 
 <div class="bg-white shadow rounded p-6 space-y-8">
@@ -20,10 +45,48 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-                <label class="block text-sm font-medium">Full Name</label>
-                <input name="full_name" class="w-full border rounded p-2"
-                       value="{{ old('full_name', $alumnus->full_name ?? '') }}" required>
+
+            {{-- Name parts --}}
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium mb-1">Name</label>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">First Name <span class="text-red-600">*</span></label>
+                        <input id="first_name" name="first_name"
+                               class="w-full border rounded p-2"
+                               value="{{ $first }}"
+                               autocomplete="given-name"
+                               required>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Middle Name (optional)</label>
+                        <input id="middle_name" name="middle_name"
+                               class="w-full border rounded p-2"
+                               value="{{ $middle }}"
+                               autocomplete="additional-name">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Last Name <span class="text-red-600">*</span></label>
+                        <input id="last_name" name="last_name"
+                               class="w-full border rounded p-2"
+                               value="{{ $last }}"
+                               autocomplete="family-name"
+                               required>
+                    </div>
+                </div>
+
+                {{-- Alumni table uses full_name for now --}}
+                <input type="hidden" id="full_name" name="full_name" value="{{ $fullNameValue }}">
+
+                <div class="text-xs text-gray-500 mt-2">
+                    Will be saved as:
+                    <span id="full_name_preview" class="font-semibold text-gray-700">
+                        {{ $fullNameValue ?: '—' }}
+                    </span>
+                </div>
             </div>
 
             <div>
@@ -78,7 +141,7 @@
             <div>
                 <label class="block text-sm font-medium">Email</label>
                 <input name="email" class="w-full border rounded p-2"
-                       value="{{ old('email', $alumnus->email ?? '') }}">
+                       value="{{ old('email', $alumnus->email ?? (auth()->user()->email ?? '')) }}">
             </div>
 
             <div>
@@ -227,3 +290,31 @@
     </section>
 
 </div>
+
+{{-- Keep full_name in sync with the 3 name fields --}}
+<script>
+(function () {
+    const first = document.getElementById('first_name');
+    const middle = document.getElementById('middle_name');
+    const last = document.getElementById('last_name');
+    const full = document.getElementById('full_name');
+    const preview = document.getElementById('full_name_preview');
+
+    if (!first || !last || !full || !preview) return;
+
+    function build() {
+        const parts = [
+            (first.value || '').trim(),
+            (middle?.value || '').trim(),
+            (last.value || '').trim()
+        ].filter(Boolean);
+
+        const v = parts.join(' ');
+        full.value = v;
+        preview.textContent = v || '—';
+    }
+
+    [first, middle, last].forEach(el => el && el.addEventListener('input', build));
+    build();
+})();
+</script>
