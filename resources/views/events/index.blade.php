@@ -28,13 +28,6 @@
             --line:#EDE7D1;
         }
 
-        .panel{
-            background:#fff;
-            border:1px solid var(--line);
-            border-radius: 18px;
-            box-shadow: 0 10px 24px rgba(2,6,23,.06);
-        }
-
         .strip{
             border:1px solid var(--line);
             border-radius: 18px;
@@ -73,6 +66,7 @@
             font-size: 12px;
             margin-top: 2px;
         }
+
         .pill{
             display:inline-flex;
             align-items:center;
@@ -131,6 +125,57 @@
     <div class="py-10" style="background:var(--page);">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+            {{-- QUICK ACCESS --}}
+            <div class="strip">
+                <div class="strip-top">
+                    <div class="strip-left">
+                        <div class="gold-bar"></div>
+                        <div class="min-w-0">
+                            <div class="strip-title">Quick Access</div>
+                            <div class="strip-sub">Jump to official sources and the calendar in one click.</div>
+                        </div>
+                    </div>
+
+                    <div class="hidden sm:flex items-center gap-2">
+                        <span class="pill">
+                            <span class="pill-dot"></span>
+                            NDMU Alumni Tracer Portal
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a href="{{ route('events.calendar') }}" class="btn-ndmu btn-primary">
+                            View Calendar
+                        </a>
+                        <a href="https://www.ndmu.edu.ph/news-and-updates" target="_blank" rel="noopener" class="btn-ndmu btn-outline">
+                            NDMU News & Updates
+                        </a>
+                        <a href="https://www.facebook.com/ndmuofficial/" target="_blank" rel="noopener" class="btn-ndmu btn-outline">
+                            NDMU Facebook
+                        </a>
+                    </div>
+
+                    <div class="mt-6 flex items-center gap-3 rounded-xl border p-4"
+                         style="border-color:var(--line); background:var(--paper);">
+                        <img src="{{ asset('images/ndmu-logo.png') }}"
+                             alt="NDMU Logo"
+                             class="h-10 w-10 rounded-full ring-2"
+                             style="--tw-ring-color: var(--ndmu-gold);"
+                             onerror="this.style.display='none';">
+                        <div class="min-w-0">
+                            <div class="text-xs font-semibold tracking-wide text-gray-600">
+                                NOTRE DAME OF MARBEL UNIVERSITY
+                            </div>
+                            <div class="text-sm font-extrabold" style="color:var(--ndmu-green);">
+                                Events & Updates
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- OFFICIAL UPDATES --}}
             <div class="strip">
                 <div class="strip-top">
@@ -145,7 +190,7 @@
                     <div class="hidden sm:flex items-center gap-2">
                         <span class="pill">
                             <span class="pill-dot"></span>
-                            NDMU Official Sources
+                            Official Sources
                         </span>
                     </div>
                 </div>
@@ -223,35 +268,9 @@
                         View upcoming alumni activities and university-related events managed by the Office of Alumni Relations.
                     </p>
 
-                    <div class="flex flex-wrap items-center gap-2">
-                        <a href="{{ route('events.calendar') }}"
-                           class="btn-ndmu btn-primary">
-                            View Calendar of Events
-                        </a>
-
-                        <a href="{{ route('dashboard') }}"
-                           class="btn-ndmu btn-outline">
-                            Back to Dashboard
-                        </a>
-                    </div>
-
-                    {{-- Small “seal” block (optional) --}}
-                    <div class="mt-6 flex items-center gap-3 rounded-xl border p-4"
-                         style="border-color:var(--line); background:var(--paper);">
-                        <img src="{{ asset('images/ndmu-logo.png') }}"
-                             alt="NDMU Logo"
-                             class="h-10 w-10 rounded-full ring-2"
-                             style="--tw-ring-color: var(--ndmu-gold);"
-                             onerror="this.style.display='none';">
-                        <div class="min-w-0">
-                            <div class="text-xs font-semibold tracking-wide text-gray-600">
-                                NOTRE DAME OF MARBEL UNIVERSITY
-                            </div>
-                            <div class="text-sm font-extrabold" style="color:var(--ndmu-green);">
-                                Alumni Tracer Portal
-                            </div>
-                        </div>
-                    </div>
+                    <a href="{{ route('events.calendar') }}" class="btn-ndmu btn-primary">
+                        View Calendar of Events
+                    </a>
                 </div>
             </div>
 

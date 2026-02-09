@@ -31,12 +31,7 @@
                 {{-- Desktop Links --}}
                 <div class="hidden lg:flex items-center gap-2">
                     {{-- Public link --}}
-                    <x-nav-link :href="route('events.calendar')" :active="request()->routeIs('events.calendar')"
-                        class="rounded-full px-4 py-2 text-sm font-semibold
-                               border border-transparent
-                               hover:border-[#0B3D2E]/20 hover:bg-[#0B3D2E]/5">
-                        Events Calendar
-                    </x-nav-link>
+                   
 
                     @auth
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')"
@@ -88,6 +83,12 @@
                             </x-nav-link>
                         @endif
                     @endauth
+                     <x-nav-link :href="route('events.calendar')" :active="request()->routeIs('events.calendar')"
+                        class="rounded-full px-4 py-2 text-sm font-semibold
+                               border border-transparent
+                               hover:border-[#0B3D2E]/20 hover:bg-[#0B3D2E]/5">
+                        Events Calendar
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -175,10 +176,6 @@
                 MENU
             </div>
 
-            <x-responsive-nav-link :href="route('events.calendar')" :active="request()->routeIs('events.calendar')">
-                Events Calendar
-            </x-responsive-nav-link>
-
             @auth
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                     Dashboard
@@ -208,6 +205,9 @@
                     </x-responsive-nav-link>
                 @endif
             @endauth
+             <x-responsive-nav-link :href="route('events.calendar')" :active="request()->routeIs('events.calendar')">
+                Events Calendar
+            </x-responsive-nav-link>
         </div>
 
         <div class="border-t border-gray-200 bg-[#FFFBF0]">
