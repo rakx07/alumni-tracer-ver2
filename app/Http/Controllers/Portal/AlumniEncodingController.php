@@ -168,24 +168,30 @@ class AlumniEncodingController extends Controller
      ============================================================ */
 
     public function edit(Alumnus $alumnus)
-    {
+{
+    // Officers can only edit assisted
+    if (!$this->isItAdmin()) {
         abort_unless($alumnus->encoding_mode === 'assisted', 404);
+    }
 
-        $alumnus->load([
-            'user',
-            'educations',
-            'employments',
-            'communityInvolvements',
-            'engagementPreference',
-            'consent',
-        ]);
+    $alumnus->load([
+        'user',
+        'educations',
+        'employments',
+        'communityInvolvements',
+        'engagementPreference',
+        'consent',
+    ]);
 
         return view('portal.alumni_encoding.edit', compact('alumnus'));
     }
 
     public function update(Request $request, Alumnus $alumnus)
     {
-        abort_unless($alumnus->encoding_mode === 'assisted', 404);
+        // Officers can only update assisted
+        if (!$this->isItAdmin()) {
+            abort_unless($alumnus->encoding_mode === 'assisted', 404);
+        }
 
         $old = $alumnus->load([
             'educations','employments','communityInvolvements',
@@ -241,6 +247,7 @@ class AlumniEncodingController extends Controller
             return back()->with('success', 'Saved (changes logged).');
         });
     }
+
 
     /* ============================================================
      | Link / Update User
