@@ -6,24 +6,40 @@ use Illuminate\Database\Eloquent\Model;
 
 class AlumniEducation extends Model
 {
-    // ✅ force the correct table
+    // force the correct table
     protected $table = 'alumni_educations';
 
     protected $fillable = [
         'alumnus_id',
         'level',
+
+        // NEW (requirements-based)
+        'did_graduate',
+
         'student_number',
         'year_entered',
         'year_graduated',
         'last_year_attended',
+
+        // Programs (pre-listed + others)
+        'program_id',
+        'specific_program',   // used when "Others" is selected
+
+        // Legacy text fields (kept for compatibility)
         'degree_program',
         'specific_program',
         'research_title',
         'thesis_title',
+
+        // Strands
+        'strand_id',
         'strand_track',
+
         'honors_awards',
         'extracurricular_activities',
         'clubs_organizations',
+
+        // Post-NDMU
         'institution_name',
         'institution_address',
         'course_degree',
@@ -32,8 +48,52 @@ class AlumniEducation extends Model
         'notes',
     ];
 
+    protected $casts = [
+        'did_graduate' => 'boolean',
+    ];
+
+    /* =========================
+     |  Relationships
+     ========================= */
     public function alumnus()
     {
         return $this->belongsTo(Alumnus::class, 'alumnus_id');
+    }
+
+    public function strand()
+    {
+        return $this->belongsTo(Strand::class, 'strand_id');
+    }
+
+    public function program()
+    {
+        return $this->belongsTo(Program::class, 'program_id');
+    }
+
+    /* =========================
+     |  Helpers (optional)
+     ========================= */
+
+    // Display-friendly program label (handles Others)
+    public function programLabel(): ?string
+    {
+        if ($this->program) {
+            return trim(($this->program->code ? $this->program->code.' — ' : '').$this->program->name);
+        }
+
+        if (!empty($this->specific_program)) {
+            return $this->specific_program;
+        }
+
+        return null;
+    }
+
+    public function strandLabel(): ?string
+    {
+        if ($this->strand) {
+            return $this->strand->code.' — '.$this->strand->name;
+        }
+
+        return $this->strand_track ?: null;
     }
 }

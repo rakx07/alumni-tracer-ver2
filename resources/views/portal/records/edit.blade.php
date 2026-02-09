@@ -1,4 +1,4 @@
-{{-- resources/views/portals/records/edit.blade.php --}}
+{{-- resources/views/portal/records/edit.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
@@ -61,7 +61,7 @@
                 @method('PUT')
 
                 <div class="bg-white shadow rounded border border-gray-100 p-6">
-                    {{-- Reuse the exact intake form UI (NO scripts inside the partial) --}}
+                    {{-- Reuse intake form UI (wrappers exist here) --}}
                     @include('user._intake_form', ['alumnus' => $alumnus])
                 </div>
 
@@ -98,14 +98,20 @@
         })();
     </script>
 
-    {{-- Intake dynamic JS (same behavior as intake.blade.php) --}}
+    {{-- Portal Edit dynamic JS (Programs + Strands + Graduate + Others) --}}
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
+        // ========= EXISTING ROWS =========
         const existingEducations  = @json(old('educations',  $alumnus?->educations?->toArray() ?? []));
         const existingEmployments = @json(old('employments', $alumnus?->employments?->toArray() ?? []));
         const existingCommunity   = @json(old('community',   $alumnus?->communityInvolvements?->toArray() ?? []));
 
+        // ========= SAFE DATA FROM CONTROLLER (NO MAP/FN IN BLADE) =========
+        const PROGRAMS_BY_CAT = @json($programs_by_cat ?? []);
+        const STRANDS         = @json($strands_list ?? []);
+
+        // ========= DOM WRAPPERS =========
         const educationWrap  = document.getElementById('education-wrap');
         const employmentWrap = document.getElementById('employment-wrap');
         const communityWrap  = document.getElementById('community-wrap');
@@ -119,7 +125,7 @@
             return;
         }
 
-        // AGE: readonly + sync
+        // ========= AGE AUTO COMPUTE =========
         const ageInput = document.querySelector('input[name="age"]');
         if (ageInput) {
             ageInput.readOnly = true;
@@ -153,15 +159,15 @@
         }
         syncAgeFromBirthdate();
 
-        // EDUCATION VISIBILITY RULES
+        // ========= VISIBILITY RULES =========
         const EDU_RULES = {
-            ndmu_elementary: ['student_number','year_entered','year_graduated','last_year_attended'],
-            ndmu_jhs:        ['student_number','year_entered','year_graduated','last_year_attended'],
-            ndmu_shs:        ['student_number','year_entered','year_graduated','last_year_attended','strand_track'],
-            ndmu_college:    ['student_number','year_entered','year_graduated','last_year_attended','strand_track','degree_program','thesis_title','honors_awards','extracurricular_activities','clubs_organizations','year_completed','scholarship_award'],
-            ndmu_grad_school:['student_number','year_entered','year_graduated','last_year_attended','strand_track','degree_program','thesis_title','honors_awards','extracurricular_activities','clubs_organizations','year_completed','scholarship_award'],
-            ndmu_law:        ['student_number','year_entered','year_graduated','last_year_attended','strand_track','degree_program','thesis_title','honors_awards','extracurricular_activities','clubs_organizations','year_completed','scholarship_award'],
-            post_ndmu:       ['institution_name','institution_address','course_degree','year_completed','scholarship_award','notes'],
+            ndmu_elementary: ['did_graduate','year_entered','year_graduated','last_year_attended'],
+            ndmu_jhs:        ['did_graduate','year_entered','year_graduated','last_year_attended'],
+            ndmu_shs:        ['did_graduate','year_entered','year_graduated','last_year_attended','strand_id','strand_track'],
+            ndmu_college:    ['did_graduate','year_entered','year_graduated','last_year_attended','program_id','specific_program'],
+            ndmu_grad_school:['did_graduate','year_entered','year_graduated','last_year_attended','program_id','specific_program'],
+            ndmu_law:        ['did_graduate','year_entered','year_graduated','last_year_attended','program_id','specific_program'],
+            post_ndmu:       ['institution_name','institution_address','course_degree','year_completed','notes'],
         };
 
         function setVisibility(cardEl, allowedKeys = []) {
@@ -183,12 +189,69 @@
             });
         }
 
+        function applyGraduateLogic(cardEl) {
+            const gradSel = cardEl.querySelector('select[data-did-graduate]');
+            const gradVal = gradSel ? gradSel.value : '';
+
+            const yg = cardEl.querySelector('[data-field="year_graduated"]');
+            const la = cardEl.querySelector('[data-field="last_year_attended"]');
+            if (!yg || !la) return;
+
+            if (gradVal === '1') {
+                yg.style.display = '';
+                la.style.display = 'none';
+                la.querySelectorAll('input').forEach(i => i.value = '');
+            } else if (gradVal === '0') {
+                yg.style.display = 'none';
+                la.style.display = '';
+                yg.querySelectorAll('input').forEach(i => i.value = '');
+            } else {
+                yg.style.display = '';
+                la.style.display = '';
+            }
+        }
+
+        function categoryForLevel(level) {
+            if (level === 'ndmu_college') return 'college';
+            if (level === 'ndmu_grad_school') return 'grad_school';
+            if (level === 'ndmu_law') return 'law';
+            return null;
+        }
+
+        function populatePrograms(programSelectEl, level) {
+            const cat = categoryForLevel(level);
+            const list = (cat && PROGRAMS_BY_CAT[cat]) ? PROGRAMS_BY_CAT[cat] : [];
+
+            let html = `<option value="">-- select --</option>`;
+            list.forEach(p => {
+                html += `<option value="${p.id}">${p.code ? (p.code + ' — ') : ''}${p.name}</option>`;
+            });
+            html += `<option value="__other__">Others (Specify)</option>`;
+            programSelectEl.innerHTML = html;
+        }
+
+        function applyProgramOthersLogic(cardEl) {
+            const programSel = cardEl.querySelector('select[data-program]');
+            const otherWrap  = cardEl.querySelector('[data-field="specific_program"]');
+            if (!programSel || !otherWrap) return;
+
+            const showOther = programSel.value === '__other__';
+            otherWrap.style.display = showOther ? '' : 'none';
+
+            if (!showOther) {
+                otherWrap.querySelectorAll('input, textarea').forEach(el => el.value = '');
+            }
+        }
+
         function applyEducationVisibility(cardEl) {
             const levelSel = cardEl.querySelector('select[data-edu-level]');
             const level = levelSel ? levelSel.value : '';
             setVisibility(cardEl, EDU_RULES[level] || []);
+            applyGraduateLogic(cardEl);
+            applyProgramOthersLogic(cardEl);
         }
 
+        // ========= EDUCATION CARD =========
         function educationCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";
@@ -215,100 +278,133 @@
                         </select>
                     </div>
 
-                    <div data-field="student_number">
-                        <label class="block font-medium">Student Number / LRN (if known)</label>
-                        <input name="educations[${i}][student_number]" class="w-full border rounded p-2" value="${data.student_number ?? ''}">
+                    <div data-field="did_graduate">
+                        <label class="block font-medium">Did you graduate?</label>
+                        <select data-did-graduate name="educations[${i}][did_graduate]" class="w-full border rounded p-2">
+                            <option value="">--</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
                     </div>
 
                     <div data-field="year_entered">
-                        <label class="block font-medium">Year Entered</label>
-                        <input name="educations[${i}][year_entered]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_entered ?? ''}">
+                        <label class="block font-medium">Year Started</label>
+                        <input name="educations[${i}][year_entered]" class="w-full border rounded p-2"
+                               placeholder="YYYY" inputmode="numeric"
+                               value="${data.year_entered ?? ''}">
                     </div>
 
                     <div data-field="year_graduated">
                         <label class="block font-medium">Year Graduated</label>
-                        <input name="educations[${i}][year_graduated]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_graduated ?? ''}">
+                        <input name="educations[${i}][year_graduated]" class="w-full border rounded p-2"
+                               placeholder="YYYY" inputmode="numeric"
+                               value="${data.year_graduated ?? ''}">
                     </div>
 
                     <div data-field="last_year_attended">
-                        <label class="block font-medium">Last Year Attended</label>
-                        <input name="educations[${i}][last_year_attended]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.last_year_attended ?? ''}">
+                        <label class="block font-medium">Last School Year Attended</label>
+                        <input name="educations[${i}][last_year_attended]" class="w-full border rounded p-2"
+                               placeholder="YYYY" inputmode="numeric"
+                               value="${data.last_year_attended ?? ''}">
+                    </div>
+
+                    <div data-field="strand_id">
+                        <label class="block font-medium">Strand (Master List)</label>
+                        <select name="educations[${i}][strand_id]" class="w-full border rounded p-2" data-strand>
+                            <option value="">-- select --</option>
+                            ${STRANDS.map(s => `<option value="${s.id}">${s.code} — ${s.name}</option>`).join('')}
+                        </select>
+                        <div class="text-xs text-gray-500 mt-1">If not listed, you can use “Strand/Track (text)” below.</div>
                     </div>
 
                     <div data-field="strand_track">
-                        <label class="block font-medium">Strand/Track (SHS)</label>
-                        <input name="educations[${i}][strand_track]" class="w-full border rounded p-2" value="${data.strand_track ?? ''}">
-                        <div class="text-xs text-gray-500 mt-1">Optional for College/Grad/Law.</div>
+                        <label class="block font-medium">Strand/Track (text)</label>
+                        <input name="educations[${i}][strand_track]" class="w-full border rounded p-2"
+                               value="${data.strand_track ?? ''}">
                     </div>
 
-                    <div class="md:col-span-2" data-field="degree_program">
-                        <label class="block font-medium">Degree/Program</label>
-                        <input name="educations[${i}][degree_program]" class="w-full border rounded p-2" value="${data.degree_program ?? ''}">
+                    <div data-field="program_id">
+                        <label class="block font-medium">Program (Master List)</label>
+                        <select data-program name="educations[${i}][program_id]" class="w-full border rounded p-2">
+                            <option value="">-- select --</option>
+                        </select>
                     </div>
 
-                    <div class="md:col-span-2" data-field="thesis_title">
-                        <label class="block font-medium">Thesis Title (if applicable)</label>
-                        <input name="educations[${i}][thesis_title]" class="w-full border rounded p-2" value="${data.thesis_title ?? ''}">
-                    </div>
-
-                    <div class="md:col-span-2" data-field="honors_awards">
-                        <label class="block font-medium">Honors/Awards</label>
-                        <textarea name="educations[${i}][honors_awards]" class="w-full border rounded p-2" rows="2">${data.honors_awards ?? ''}</textarea>
-                    </div>
-
-                    <div class="md:col-span-2" data-field="extracurricular_activities">
-                        <label class="block font-medium">Extracurricular Activities</label>
-                        <textarea name="educations[${i}][extracurricular_activities]" class="w-full border rounded p-2" rows="2">${data.extracurricular_activities ?? ''}</textarea>
-                    </div>
-
-                    <div class="md:col-span-2" data-field="clubs_organizations">
-                        <label class="block font-medium">Clubs/Organizations Joined</label>
-                        <textarea name="educations[${i}][clubs_organizations]" class="w-full border rounded p-2" rows="2">${data.clubs_organizations ?? ''}</textarea>
-                    </div>
-
-                    <div data-field="year_completed">
-                        <label class="block font-medium">Year Completed</label>
-                        <input name="educations[${i}][year_completed]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_completed ?? ''}">
-                    </div>
-
-                    <div data-field="scholarship_award">
-                        <label class="block font-medium">Scholarship/Award</label>
-                        <input name="educations[${i}][scholarship_award]" class="w-full border rounded p-2" value="${data.scholarship_award ?? ''}">
+                    <div data-field="specific_program">
+                        <label class="block font-medium">If Others, specify program</label>
+                        <input name="educations[${i}][specific_program]" class="w-full border rounded p-2"
+                               value="${data.specific_program ?? ''}">
                     </div>
 
                     <div class="md:col-span-2" data-field="institution_name">
                         <label class="block font-medium">Institution Name</label>
-                        <input name="educations[${i}][institution_name]" class="w-full border rounded p-2" value="${data.institution_name ?? ''}">
+                        <input name="educations[${i}][institution_name]" class="w-full border rounded p-2"
+                               value="${data.institution_name ?? ''}">
                     </div>
 
                     <div class="md:col-span-2" data-field="institution_address">
                         <label class="block font-medium">Institution Address</label>
-                        <input name="educations[${i}][institution_address]" class="w-full border rounded p-2" value="${data.institution_address ?? ''}">
+                        <input name="educations[${i}][institution_address]" class="w-full border rounded p-2"
+                               value="${data.institution_address ?? ''}">
                     </div>
 
                     <div class="md:col-span-2" data-field="course_degree">
                         <label class="block font-medium">Course / Degree (Post-NDMU)</label>
-                        <input name="educations[${i}][course_degree]" class="w-full border rounded p-2" value="${data.course_degree ?? ''}">
+                        <input name="educations[${i}][course_degree]" class="w-full border rounded p-2"
+                               value="${data.course_degree ?? ''}">
+                    </div>
+
+                    <div data-field="year_completed">
+                        <label class="block font-medium">Year Completed</label>
+                        <input name="educations[${i}][year_completed]" class="w-full border rounded p-2"
+                               placeholder="YYYY" inputmode="numeric"
+                               value="${data.year_completed ?? ''}">
                     </div>
 
                     <div class="md:col-span-2" data-field="notes">
                         <label class="block font-medium">Notes</label>
                         <textarea name="educations[${i}][notes]" class="w-full border rounded p-2" rows="2">${data.notes ?? ''}</textarea>
                     </div>
-
                 </div>
             `;
 
-            const sel = div.querySelector('select[data-edu-level]');
-            sel.value = data.level ?? '';
+            const levelSel   = div.querySelector('select[data-edu-level]');
+            const gradSel    = div.querySelector('select[data-did-graduate]');
+            const programSel = div.querySelector('select[data-program]');
+
+            levelSel.value = data.level ?? '';
+            gradSel.value  = (data.did_graduate ?? '') === null ? '' : String(data.did_graduate ?? '');
+
+            populatePrograms(programSel, levelSel.value);
+
+            if (data.program_id) {
+                programSel.value = String(data.program_id);
+            } else if (data.specific_program) {
+                programSel.value = '__other__';
+            } else {
+                programSel.value = '';
+            }
+
+            const strandSel = div.querySelector('select[data-strand]');
+            if (strandSel) strandSel.value = data.strand_id ? String(data.strand_id) : '';
 
             applyEducationVisibility(div);
-            sel.addEventListener('change', () => applyEducationVisibility(div));
+
+            levelSel.addEventListener('change', () => {
+                populatePrograms(programSel, levelSel.value);
+                programSel.value = '';
+                applyEducationVisibility(div);
+            });
+
+            gradSel.addEventListener('change', () => applyEducationVisibility(div));
+            programSel.addEventListener('change', () => applyEducationVisibility(div));
 
             div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
+
             return div;
         }
 
+        // ========= EMPLOYMENT CARD =========
         function employmentCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";
@@ -372,6 +468,7 @@
             return div;
         }
 
+        // ========= COMMUNITY CARD =========
         function communityCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";
@@ -401,6 +498,7 @@
             return div;
         }
 
+        // ========= INIT =========
         function init() {
             educationWrap.innerHTML = "";
             employmentWrap.innerHTML = "";
@@ -422,6 +520,7 @@
 
         init();
 
+        // Add buttons
         addEduBtn?.addEventListener('click', () => {
             const i = educationWrap.querySelectorAll(':scope > div').length;
             educationWrap.appendChild(educationCard(i, {}));

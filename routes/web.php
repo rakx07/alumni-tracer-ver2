@@ -9,7 +9,6 @@ use App\Http\Controllers\ITAdmin\CaptchaSettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ITAdmin\UserManagementController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\Portal\AlumniEncodingController;
 
 Route::get('/', fn () => view('welcome'));
 
@@ -65,6 +64,29 @@ Route::middleware(['auth', 'verified', 'role:it_admin'])
 
         Route::post('/users/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('users.reset_password');
         Route::post('/users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggle_active');
+
+
+          // ================= PROGRAMS =================
+        Route::get('/programs', [ProgramController::class, 'index'])->name('programs.index');
+        Route::get('/programs/create', [ProgramController::class, 'create'])->name('programs.create');
+        Route::post('/programs', [ProgramController::class, 'store'])->name('programs.store');
+        Route::get('/programs/{program}/edit', [ProgramController::class, 'edit'])->name('programs.edit');
+        Route::put('/programs/{program}', [ProgramController::class, 'update'])->name('programs.update');
+        Route::post('/programs/{program}/toggle', [ProgramController::class, 'toggle'])->name('programs.toggle');
+
+        Route::get('/programs/upload', [ProgramController::class, 'uploadForm'])->name('programs.upload_form');
+        Route::post('/programs/upload', [ProgramController::class, 'upload'])->name('programs.upload');
+
+        // ================= STRANDS =================
+        Route::get('/strands', [StrandController::class, 'index'])->name('strands.index');
+        Route::get('/strands/create', [StrandController::class, 'create'])->name('strands.create');
+        Route::post('/strands', [StrandController::class, 'store'])->name('strands.store');
+        Route::get('/strands/{strand}/edit', [StrandController::class, 'edit'])->name('strands.edit');
+        Route::put('/strands/{strand}', [StrandController::class, 'update'])->name('strands.update');
+        Route::post('/strands/{strand}/toggle', [StrandController::class, 'toggle'])->name('strands.toggle');
+
+        Route::get('/strands/upload', [StrandController::class, 'uploadForm'])->name('strands.upload_form');
+        Route::post('/strands/upload', [StrandController::class, 'upload'])->name('strands.upload');
     });
 
 /* ================= PORTAL EVENTS (Officer/Admin) ================= */
