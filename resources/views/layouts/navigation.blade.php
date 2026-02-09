@@ -42,6 +42,15 @@
                                 Manage Events
                             </x-nav-link>
                         @endif
+
+                        {{-- Alumni Encoding (officer / IT admin / admin) --}}
+                        @if(in_array($role, ['alumni_officer','it_admin','admin'], true))
+                            <x-nav-link :href="route('portal.alumni_encoding.index')"
+                                        :active="request()->routeIs('portal.alumni_encoding.*')">
+                                Encode Alumni
+                            </x-nav-link>
+                        @endif
+
                     @endauth
                 </div>
             </div>

@@ -9,6 +9,9 @@ use App\Http\Controllers\ITAdmin\CaptchaSettingsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ITAdmin\UserManagementController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\Portal\AlumniEncodingController;
+use App\Http\Controllers\ITAdmin\ProgramController;
+use App\Http\Controllers\ITAdmin\StrandController;
 
 Route::get('/', fn () => view('welcome'));
 
