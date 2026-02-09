@@ -1,13 +1,24 @@
 {{-- resources/views/portal/records/index.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-                <h2 class="font-semibold text-xl text-gray-900 leading-tight">
+                <h2 class="font-extrabold text-xl text-gray-900 leading-tight">
                     Alumni Records
                 </h2>
                 <div class="text-sm text-gray-600">
                     Search, filter, and manage alumni intake records.
+                </div>
+            </div>
+
+            {{-- Optional quick hint / count --}}
+            <div class="flex items-center gap-2">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg border"
+                     style="border-color:#E3C77A; background:#FFFBF0; color:#0B3D2E;">
+                    <span class="inline-block h-2 w-2 rounded-full" style="background:#0B3D2E;"></span>
+                    <span class="text-xs font-semibold tracking-wide">
+                        NDMU Alumni Tracer Portal
+                    </span>
                 </div>
             </div>
         </div>
@@ -25,19 +36,39 @@
         $append = request()->only(['q','field','from','to','per_page']);
     @endphp
 
-    <div class="py-8">
+    <div class="py-8" style="background:#FAFAF8;">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
 
-            {{-- SUCCESS --}}
+            {{-- Success --}}
             @if(session('success'))
-                <div class="p-3 bg-green-100 border border-green-300 rounded">
+                <div class="rounded-lg border p-3 text-sm"
+                     style="border-color:#BBF7D0; background:#ECFDF5; color:#065F46;">
                     {{ session('success') }}
                 </div>
             @endif
 
-            {{-- FILTER BAR (aligned / parallel) --}}
-            <div class="bg-white shadow rounded border border-gray-100">
-                <div class="p-4">
+            {{-- NDMU Section Title Strip --}}
+            <div class="rounded-xl overflow-hidden border bg-white shadow-sm">
+                <div class="px-5 py-4 flex items-center justify-between gap-3"
+                     style="background:#0B3D2E;">
+                    <div class="flex items-center gap-3">
+                        <div class="h-9 w-1 rounded-full" style="background:#E3C77A;"></div>
+                        <div>
+                            <div class="text-sm font-semibold text-white">Records Management</div>
+                            <div class="text-xs text-white/80">
+                                Use filters below to narrow results; changes auto-apply.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hidden md:flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg"
+                         style="background:#FFFBF0; color:#0B3D2E;">
+                        Total on this page: {{ $records->count() }}
+                    </div>
+                </div>
+
+                {{-- Filter Bar --}}
+                <div class="p-5">
                     <form method="GET" id="filtersForm">
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
 
@@ -48,8 +79,9 @@
                                     type="text"
                                     name="q"
                                     id="q"
-                                    class="w-full border rounded px-3 py-2 h-10"
-                                    placeholder="Type to search..."
+                                    class="w-full border rounded-lg px-3 py-2 h-10 focus:outline-none focus:ring-2"
+                                    style="border-color:#E5E7EB;"
+                                    placeholder="Type name, email, or ID..."
                                     value="{{ $q }}"
                                 >
                             </div>
@@ -60,7 +92,8 @@
                                 <select
                                     name="field"
                                     id="field"
-                                    class="w-full border rounded px-3 py-2 h-10"
+                                    class="w-full border rounded-lg px-3 py-2 h-10"
+                                    style="border-color:#E5E7EB;"
                                 >
                                     <option value="all"   {{ $field==='all'?'selected':'' }}>All fields</option>
                                     <option value="name"  {{ $field==='name'?'selected':'' }}>Full name</option>
@@ -76,7 +109,8 @@
                                     type="date"
                                     name="from"
                                     id="from"
-                                    class="w-full border rounded px-3 py-2 h-10"
+                                    class="w-full border rounded-lg px-3 py-2 h-10"
+                                    style="border-color:#E5E7EB;"
                                     value="{{ $from }}"
                                 >
                             </div>
@@ -88,7 +122,8 @@
                                     type="date"
                                     name="to"
                                     id="to"
-                                    class="w-full border rounded px-3 py-2 h-10"
+                                    class="w-full border rounded-lg px-3 py-2 h-10"
+                                    style="border-color:#E5E7EB;"
                                     value="{{ $to }}"
                                 >
                             </div>
@@ -99,11 +134,12 @@
                                 <select
                                     name="per_page"
                                     id="per_page"
-                                    class="w-full border rounded px-3 py-2 h-10"
+                                    class="w-full border rounded-lg px-3 py-2 h-10"
+                                    style="border-color:#E5E7EB;"
                                 >
                                     @foreach([10,25,50,100] as $n)
                                         <option value="{{ $n }}" {{ (string)$perPage === (string)$n ? 'selected' : '' }}>
-                                            {{ $n }} / page
+                                            {{ $n }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -113,47 +149,77 @@
                             <div class="lg:col-span-2 flex gap-2">
                                 <button
                                     type="submit"
-                                    class="h-10 px-4 bg-gray-900 text-white rounded hover:bg-gray-800 w-full"
+                                    class="h-10 px-4 rounded-lg w-full text-sm font-semibold shadow-sm transition"
+                                    style="background:#0B3D2E; color:white;"
                                 >
                                     Apply
                                 </button>
 
                                 <a
                                     href="{{ route('portal.records.index') }}"
-                                    class="h-10 px-4 bg-gray-100 text-gray-800 rounded border hover:bg-gray-200 w-full text-center flex items-center justify-center"
+                                    class="h-10 px-4 rounded-lg w-full text-sm font-semibold border text-center flex items-center justify-center shadow-sm transition"
+                                    style="border-color:#E3C77A; background:#FFFBF0; color:#0B3D2E;"
                                 >
                                     Reset
                                 </a>
                             </div>
 
                         </div>
+
+                        {{-- Active filter chips --}}
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            @php
+                                $chips = [];
+                                if ($q) $chips[] = ['label' => 'Search: '.$q];
+                                if ($field && $field !== 'all') $chips[] = ['label' => 'Field: '.$field];
+                                if ($from) $chips[] = ['label' => 'From: '.$from];
+                                if ($to) $chips[] = ['label' => 'To: '.$to];
+                                if ($perPage) $chips[] = ['label' => 'Rows: '.$perPage];
+                            @endphp
+
+                            @foreach($chips as $c)
+                                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border"
+                                      style="border-color:#E3C77A; background:#FFFBF0; color:#0B3D2E;">
+                                    <span class="inline-block h-2 w-2 rounded-full" style="background:#0B3D2E;"></span>
+                                    {{ $c['label'] }}
+                                </span>
+                            @endforeach
+
+                            @if(empty($chips))
+                                <span class="text-xs text-gray-500">No filters applied.</span>
+                            @endif
+                        </div>
                     </form>
                 </div>
             </div>
 
-            {{-- TABLE --}}
-            <div class="bg-white shadow rounded border border-gray-100 overflow-hidden">
+            {{-- Table --}}
+            <div class="bg-white shadow-sm rounded-xl border overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 border-b">
-                            <tr class="text-gray-700">
-                                <th class="p-3 text-left font-semibold">ID</th>
-                                <th class="p-3 text-left font-semibold">Full Name</th>
-                                <th class="p-3 text-left font-semibold">Email</th>
-                                <th class="p-3 text-left font-semibold">Created</th>
-                                <th class="p-3 text-left font-semibold">Actions</th>
+                        <thead class="border-b"
+                               style="background:#FFFBF0;">
+                            <tr style="color:#0B3D2E;">
+                                <th class="p-3 text-left font-extrabold">ID</th>
+                                <th class="p-3 text-left font-extrabold">Full Name</th>
+                                <th class="p-3 text-left font-extrabold">Email</th>
+                                <th class="p-3 text-left font-extrabold">Created</th>
+                                <th class="p-3 text-left font-extrabold">Actions</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             @forelse($records as $a)
                                 <tr class="border-b hover:bg-gray-50">
-                                    <td class="p-3 font-medium text-gray-900 whitespace-nowrap">
-                                        {{ $a->id }}
+                                    <td class="p-3 font-bold text-gray-900 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-extrabold border"
+                                              style="border-color:#E3C77A; background:#FFFBF0; color:#0B3D2E;">
+                                            #{{ $a->id }}
+                                        </span>
                                     </td>
 
                                     <td class="p-3">
-                                        <div class="font-semibold text-gray-900">{{ $a->full_name }}</div>
+                                        <div class="font-extrabold text-gray-900">{{ $a->full_name }}</div>
                                         <div class="text-xs text-gray-500">
                                             Contact: {{ $a->contact_number ?: '—' }}
                                         </div>
@@ -172,23 +238,28 @@
 
                                     <td class="p-3 whitespace-nowrap">
                                         <div class="flex flex-wrap items-center gap-2">
+
                                             <a href="{{ route('portal.records.show', $a) }}"
-                                               class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded border border-blue-100 hover:bg-blue-100">
+                                               class="px-3 py-1.5 rounded-lg text-sm font-semibold border shadow-sm transition"
+                                               style="border-color:#D1FAE5; background:#ECFDF5; color:#065F46;">
                                                 View
                                             </a>
 
                                             <a href="{{ route('portal.records.edit', $a) }}"
-                                               class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded border border-indigo-100 hover:bg-indigo-100">
+                                               class="px-3 py-1.5 rounded-lg text-sm font-semibold border shadow-sm transition"
+                                               style="border-color:#E3C77A; background:#FFFBF0; color:#0B3D2E;">
                                                 Edit
                                             </a>
 
                                             <a href="{{ route('portal.records.pdf', $a) }}"
-                                               class="px-3 py-1.5 bg-gray-50 text-gray-700 rounded border hover:bg-gray-100">
+                                               class="px-3 py-1.5 rounded-lg text-sm font-semibold border shadow-sm transition hover:bg-gray-50"
+                                               style="border-color:#E5E7EB; background:white; color:#374151;">
                                                 PDF
                                             </a>
 
                                             <a href="{{ route('portal.records.excel', $a) }}"
-                                               class="px-3 py-1.5 bg-gray-50 text-gray-700 rounded border hover:bg-gray-100">
+                                               class="px-3 py-1.5 rounded-lg text-sm font-semibold border shadow-sm transition hover:bg-gray-50"
+                                               style="border-color:#E5E7EB; background:white; color:#374151;">
                                                 Excel
                                             </a>
 
@@ -200,7 +271,8 @@
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"
-                                                            class="px-3 py-1.5 bg-red-50 text-red-700 rounded border border-red-100 hover:bg-red-100">
+                                                            class="px-3 py-1.5 rounded-lg text-sm font-semibold border shadow-sm transition"
+                                                            style="border-color:#FECACA; background:#FEF2F2; color:#991B1B;">
                                                         Delete
                                                     </button>
                                                 </form>
@@ -210,8 +282,9 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="p-6 text-center text-gray-500">
-                                        No records found.
+                                    <td colspan="5" class="p-8 text-center text-gray-500">
+                                        <div class="font-semibold">No records found.</div>
+                                        <div class="text-xs mt-1">Try adjusting your filters.</div>
                                     </td>
                                 </tr>
                             @endforelse
@@ -228,7 +301,7 @@
         </div>
     </div>
 
-    {{-- “Dynamic” filtering: auto-submit after typing / changing filters (no AJAX needed) --}}
+    {{-- Auto submit filters (no AJAX) --}}
     <script>
         (function () {
             const form = document.getElementById('filtersForm');
@@ -245,7 +318,7 @@
             if (q) {
                 q.addEventListener('input', function () {
                     clearTimeout(t);
-                    t = setTimeout(() => form.submit(), 450); // submit after user stops typing
+                    t = setTimeout(() => form.submit(), 450);
                 });
             }
 
