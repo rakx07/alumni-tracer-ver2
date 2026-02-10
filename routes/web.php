@@ -90,6 +90,14 @@ Route::middleware(['auth', 'verified', 'role:it_admin'])
 
         Route::get('/strands/upload', [StrandController::class, 'uploadForm'])->name('strands.upload_form');
         Route::post('/strands/upload', [StrandController::class, 'upload'])->name('strands.upload');
+
+        // Programs template download
+        Route::get('/programs/template', [ProgramController::class, 'downloadTemplate'])
+            ->name('programs.template');
+
+        // Strands template download
+        Route::get('/strands/template', [StrandController::class, 'downloadTemplate'])
+            ->name('strands.template');
     });
 
 /* ================= PORTAL EVENTS (Officer/Admin) ================= */

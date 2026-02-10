@@ -107,13 +107,27 @@
 
 
                             {{-- ✅ NEW: User Management (IT Admin only) --}}
-                            @if(($role ?? null) === 'it_admin')
-                                <a href="{{ route('itadmin.users.index') }}"
-                                class="inline-flex items-center px-4 py-2 rounded font-semibold"
-                                style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
-                                    User Management
-                                </a>
-                            @endif
+                            {{-- ✅ IT Admin tools --}}
+                        @if(($role ?? null) === 'it_admin')
+                            <a href="{{ route('itadmin.users.index') }}"
+                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                            style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
+                                User Management
+                            </a>
+
+                            <a href="{{ route('itadmin.programs.index') }}"
+                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                            style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
+                                Programs
+                            </a>
+
+                            <a href="{{ route('itadmin.strands.index') }}"
+                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                            style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
+                                Strands
+                            </a>
+                        @endif
+
                         </div>
 
                         </div>
