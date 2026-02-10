@@ -1,171 +1,147 @@
-{{-- resources/views/itadmin/programs/_form.blade.php --}}
 @php
+    // SAFE: works for create (null) and edit (Program model)
     $p = $program ?? null;
 
-    $ndmuGreen = '#0B3D2E';
-    $ndmuGold  = '#E3C77A';
-    $paper     = '#FFFBF0';
-    $line      = '#EDE7D1';
-
-    $valCategory = old('category', $p->category ?? 'college');
-    $valCode     = old('code', $p->code ?? '');
-    $valName     = old('name', $p->name ?? '');
-    $valActive   = old('is_active', $p->is_active ?? true);
+    $valCategory = old('category', $p?->category ?? 'college');
+    $valCode     = old('code', $p?->code ?? '');
+    $valName     = old('name', $p?->name ?? '');
+    $valActive   = old('is_active', $p?->is_active ?? true);
 @endphp
 
 <style>
     :root{
-        --ndmu-green: {{ $ndmuGreen }};
-        --ndmu-gold: {{ $ndmuGold }};
-        --paper: {{ $paper }};
-        --line: {{ $line }};
+        --ndmu-green:#0B3D2E;
+        --ndmu-gold:#E3C77A;
+        --paper:#FFFBF0;
+        --page:#FAFAF8;
+        --line:#EDE7D1;
     }
 
-    .ndmu-field label{
-        font-size: 12px;
-        font-weight: 800;
-        color: rgba(15,23,42,.78);
-    }
-
-    .ndmu-input, .ndmu-select{
-        width: 100%;
+    .ndmu-field{
+        width:100%;
         border-radius: 12px;
         border: 1px solid rgba(15,23,42,.18);
         padding: 10px 12px;
         font-size: 14px;
         outline: none;
-        background: #fff;
+        background:#fff;
     }
-
-    .ndmu-input:focus, .ndmu-select:focus{
+    .ndmu-field:focus{
         box-shadow: 0 0 0 3px rgba(227,199,122,.35);
         border-color: rgba(227,199,122,.85);
+    }
+
+    .ndmu-label{
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--ndmu-green);
     }
 
     .ndmu-help{
         font-size: 12px;
         color: rgba(15,23,42,.62);
-        margin-top: 6px;
-        line-height: 1.3;
     }
 
-    .ndmu-card{
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        background: var(--paper);
-        padding: 14px;
-    }
-
-    .ndmu-badge{
+    .ndmu-chip{
         display:inline-flex;
         align-items:center;
         gap:8px;
-        padding: 6px 10px;
+        padding: 7px 10px;
         border-radius: 999px;
         font-size: 12px;
         font-weight: 900;
-        border: 1px solid rgba(227,199,122,.65);
-        background: rgba(227,199,122,.20);
+        background: rgba(227,199,122,.18);
+        border:1px solid rgba(227,199,122,.45);
         color: var(--ndmu-green);
+    }
+
+    .ndmu-check{
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        border: 1px solid rgba(15,23,42,.25);
+    }
+
+    .ndmu-errors{
+        border-radius: 14px;
+        border: 1px solid rgba(239,68,68,.25);
+        background: rgba(239,68,68,.08);
+        padding: 14px;
+        color: rgba(127,29,29,1);
+        font-size: 13px;
     }
 </style>
 
-<div class="space-y-4">
+<div class="space-y-6">
 
-    {{-- Small header card --}}
-    <div class="ndmu-card">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <div class="font-extrabold" style="color:var(--ndmu-green);">
-                    Program Information
-                </div>
-                <div class="ndmu-help">
-                    Programs appear in the Alumni Intake “College/Grad/Law” selections (and assisted encoding).
-                </div>
+    <div class="flex items-center justify-between">
+        <div>
+            <div class="text-sm font-extrabold" style="color:var(--ndmu-green);">
+                Program Information
             </div>
-            <span class="ndmu-badge">NDMU</span>
+            <div class="ndmu-help mt-1">
+                This list appears in Alumni Intake (College / Grad School / Law).
+            </div>
         </div>
+
+        <span class="ndmu-chip">
+            NDMU • Catalog
+        </span>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {{-- Category --}}
-        <div class="ndmu-field">
-            <label class="block mb-1">
-                Category <span class="text-red-600">*</span>
-            </label>
-            <select name="category" class="ndmu-select" required>
-                <option value="college" @selected($valCategory === 'college')>College</option>
-                <option value="grad_school" @selected($valCategory === 'grad_school')>Graduate School</option>
-                <option value="law" @selected($valCategory === 'law')>Law</option>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div>
+            <label class="ndmu-label">Category <span class="text-red-600">*</span></label>
+            <select name="category" class="ndmu-field mt-1" required>
+                <option value="college" {{ $valCategory==='college' ? 'selected' : '' }}>College</option>
+                <option value="grad_school" {{ $valCategory==='grad_school' ? 'selected' : '' }}>Graduate School</option>
+                <option value="law" {{ $valCategory==='law' ? 'selected' : '' }}>Law</option>
             </select>
-            <div class="ndmu-help">
-                Used for grouping and filtering in the admin list.
-            </div>
+            <div class="ndmu-help mt-1">Used to group programs inside the intake dropdown.</div>
         </div>
 
-        {{-- Code --}}
-        <div class="ndmu-field">
-            <label class="block mb-1">Code (optional)</label>
+        <div>
+            <label class="ndmu-label">Code (optional)</label>
             <input name="code"
-                   class="ndmu-input"
+                   class="ndmu-field mt-1"
                    value="{{ $valCode }}"
                    placeholder="e.g. BSIT, MBA, JD">
-            <div class="ndmu-help">
-                Short identifier. If blank, searches will rely on the name.
-            </div>
+            <div class="ndmu-help mt-1">Short code shown in lists (if available).</div>
         </div>
 
-        {{-- Name --}}
-        <div class="ndmu-field md:col-span-2">
-            <label class="block mb-1">
-                Program Name <span class="text-red-600">*</span>
-            </label>
+        <div class="md:col-span-2">
+            <label class="ndmu-label">Program Name <span class="text-red-600">*</span></label>
             <input name="name"
-                   class="ndmu-input"
+                   class="ndmu-field mt-1"
                    value="{{ $valName }}"
                    placeholder="e.g. Bachelor of Science in Information Technology"
                    required>
-            <div class="ndmu-help">
-                This is what users/officers will see in dropdowns.
-            </div>
         </div>
 
-        {{-- Active --}}
-        <div class="ndmu-field md:col-span-2">
-            <div class="flex items-center justify-between p-3 rounded-xl bg-white"
-                 style="border:1px solid var(--line);">
-                <div>
-                    <div class="font-extrabold" style="color:var(--ndmu-green); font-size:13px;">
-                        Active Status
-                    </div>
-                    <div class="ndmu-help">
-                        If disabled, it can be hidden from selections (depending on your intake query).
-                    </div>
-                </div>
-
-                <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-                    <input type="checkbox"
-                           name="is_active"
-                           value="1"
-                           class="rounded"
-                           @checked((bool)$valActive)>
-                    <span class="text-sm font-semibold" style="color:rgba(15,23,42,.78);">Active</span>
-                </label>
+        <div class="md:col-span-2">
+            <label class="inline-flex items-center gap-2">
+                <input type="checkbox"
+                       name="is_active"
+                       value="1"
+                       class="ndmu-check"
+                       {{ $valActive ? 'checked' : '' }}>
+                <span class="text-sm font-semibold" style="color:var(--ndmu-green);">Active</span>
+            </label>
+            <div class="ndmu-help mt-1">
+                Disable instead of deleting, so historical records remain valid.
             </div>
         </div>
     </div>
 
-    {{-- Errors (keep inside partial for create/edit convenience) --}}
     @if ($errors->any())
-        <div class="p-4 rounded-xl text-sm"
-             style="border:1px solid rgba(248,113,113,.45); background:rgba(254,242,242,1);">
-            <div class="font-extrabold text-red-800 mb-2">Please fix the following:</div>
-            <ul class="list-disc ml-5 text-red-800">
+        <div class="ndmu-errors">
+            <div class="font-extrabold mb-2">Please fix the following:</div>
+            <ul class="list-disc ml-5 space-y-1">
                 @foreach($errors->all() as $e)
                     <li>{{ $e }}</li>
                 @endforeach
             </ul>
         </div>
     @endif
-
 </div>

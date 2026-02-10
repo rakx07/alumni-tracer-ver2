@@ -92,6 +92,7 @@
             border-color: rgba(227,199,122,.85);
         }
 
+        /* Buttons */
         .btn{
             display:inline-flex;
             align-items:center;
@@ -103,6 +104,7 @@
             transition: .15s ease;
             white-space: nowrap;
             box-shadow: 0 6px 14px rgba(2,6,23,.06);
+            width: 100%;
         }
         .btn-primary{ background: var(--ndmu-green); color:#fff; }
         .btn-primary:hover{ filter: brightness(.95); }
@@ -138,6 +140,8 @@
         .help{
             font-size: 12px;
             color: rgba(15,23,42,.62);
+            line-height: 1.25rem;
+            min-height: 1.25rem; /* reserve equal helper space */
         }
 
         table.ndmu th{
@@ -164,33 +168,58 @@
 
             {{-- Filters --}}
             <div class="panel p-4">
-                <form class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                <form method="GET" action="{{ route('itadmin.strands.index') }}"
+                      class="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+                    {{-- Status --}}
                     <div class="md:col-span-3">
-                        <label class="block text-sm font-semibold" style="color:var(--ndmu-green);">Status</label>
-                        <select name="status" class="input mt-1">
+                        <label class="block text-sm font-semibold" style="color:var(--ndmu-green);">
+                            Status
+                        </label>
+
+                        <select name="status" class="input mt-2">
                             <option value="">All</option>
                             <option value="active" {{ request('status')==='active'?'selected':'' }}>Active</option>
                             <option value="inactive" {{ request('status')==='inactive'?'selected':'' }}>Inactive</option>
                         </select>
+
+                        {{-- keep same height as search help --}}
+                        <div class="help mt-2 opacity-0">placeholder</div>
                     </div>
 
+                    {{-- Search --}}
                     <div class="md:col-span-7">
-                        <label class="block text-sm font-semibold" style="color:var(--ndmu-green);">Search</label>
+                        <label class="block text-sm font-semibold" style="color:var(--ndmu-green);">
+                            Search
+                        </label>
+
                         <input name="search"
                                value="{{ request('search') }}"
-                               class="input mt-1"
+                               class="input mt-2"
                                placeholder="Search by strand name or code">
-                        <div class="help mt-1">Tip: search “STEM”, “ABM”, “HUMSS”, etc.</div>
+
+                        <div class="help mt-2">Tip: search “STEM”, “ABM”, “HUMSS”, etc.</div>
                     </div>
 
-                    <div class="md:col-span-2 flex gap-2">
-                        <button class="btn btn-primary w-full" type="submit">
-                            Filter
-                        </button>
-                        <a class="btn btn-outline" href="{{ route('itadmin.strands.index') }}">
-                            Reset
-                        </a>
+                    {{-- Buttons --}}
+                    <div class="md:col-span-2 flex flex-col">
+                        {{-- match label height (roughly) --}}
+                        <div style="height:20px;"></div>
+
+                        <div class="mt-2 flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                Filter
+                            </button>
+
+                            <a href="{{ route('itadmin.strands.index') }}" class="btn btn-outline">
+                                Reset
+                            </a>
+                        </div>
+
+                        {{-- keep same height as search help --}}
+                        <div class="help mt-2 opacity-0">placeholder</div>
                     </div>
+
                 </form>
             </div>
 
