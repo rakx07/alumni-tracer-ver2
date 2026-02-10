@@ -1,7 +1,17 @@
 {{-- resources/views/user/_intake_form.blade.php --}}
 @php
-    // Reusable intake partial (Create + Edit)
+    /**
+     * Reusable intake partial (Self-service + Assisted encoding)
+     *
+     * Usage:
+     *  - Self-service (default): @include('user._intake_form', ['alumnus' => $alumnus])
+     *  - Assisted encoding:      @include('user._intake_form', ['alumnus' => $alumnus, 'prefill_from_auth' => false])
+     */
+
     $alumnus = $alumnus ?? null;
+
+    // NEW: allow caller to disable pulling defaults from the logged-in user
+    $prefill_from_auth = $prefill_from_auth ?? true;
 
     $sex = old('sex', $alumnus->sex ?? '');
     $cs  = old('civil_status', $alumnus->civil_status ?? '');
@@ -9,31 +19,35 @@
     $pref    = $alumnus->engagementPreference ?? null;
     $consent = $alumnus->consent ?? null;
 
-    $u = auth()->user();
+    $u = $prefill_from_auth ? auth()->user() : null;
 
-    // Build default full name from the USER account name parts (users table has first/middle/last)
-    $defaultFullName = trim(collect([
-        $u?->first_name,
-        $u?->middle_name,
-        $u?->last_name,
-    ])->filter()->implode(' '));
+    // Default full name from logged-in user ONLY if enabled
+    $defaultFullName = $prefill_from_auth
+        ? trim(collect([
+            $u?->first_name,
+            $u?->middle_name,
+            $u?->last_name,
+        ])->filter()->implode(' '))
+        : '';
 
-    // Alumni table currently has ONLY full_name, so we keep writing to full_name (hidden),
-    // but we display first/middle/last inputs in the UI.
+    // Alumni table uses full_name; when assisted, we prefer alumnus->full_name only (no auth fallback)
     $fullNameValue = old('full_name', $alumnus->full_name ?? $defaultFullName);
 
-    // Prefill name fields from USER columns first. If blank, best-effort split from full_name.
-    $first  = old('first_name',  $u?->first_name ?? '');
-    $middle = old('middle_name', $u?->middle_name ?? '');
-    $last   = old('last_name',   $u?->last_name ?? '');
+    // Name fields:
+    // - Assisted mode: use alumnus split if needed (NOT auth user)
+    // - Self-service: use auth user first
+    $first  = old('first_name',  $prefill_from_auth ? ($u?->first_name ?? '') : '');
+    $middle = old('middle_name', $prefill_from_auth ? ($u?->middle_name ?? '') : '');
+    $last   = old('last_name',   $prefill_from_auth ? ($u?->last_name ?? '') : '');
 
-    if (!$first && !$last && $fullNameValue) {
+    if ((!$first && !$last) && $fullNameValue) {
         $parts = preg_split('/\s+/', trim($fullNameValue));
         $first = $parts[0] ?? '';
         $last  = count($parts) > 1 ? $parts[count($parts)-1] : '';
         $middle = count($parts) > 2 ? implode(' ', array_slice($parts, 1, -1)) : '';
     }
 @endphp
+
 
 <div class="bg-white shadow rounded p-6 space-y-8">
 
@@ -141,7 +155,9 @@
             <div>
                 <label class="block text-sm font-medium">Email</label>
                 <input name="email" class="w-full border rounded p-2"
-                       value="{{ old('email', $alumnus->email ?? (auth()->user()->email ?? '')) }}">
+                   value="{{ old('email', $alumnus->email ?? ($prefill_from_auth ? (auth()->user()->email ?? '') : '')) }}">
+
+
             </div>
 
             <div>

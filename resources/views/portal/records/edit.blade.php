@@ -184,7 +184,12 @@
 
                 <div class="panel p-6">
                     {{-- Reuse intake form UI --}}
-                    @include('user._intake_form', ['alumnus' => $alumnus])
+                   @php($alumnusLocal = $alumnus)
+
+                    @include('user._intake_form', [
+                        'alumnus' => $alumnusLocal,
+                        'prefill_from_auth' => false
+                    ])
                 </div>
 
                 <div class="mt-4 flex items-center justify-end gap-2">

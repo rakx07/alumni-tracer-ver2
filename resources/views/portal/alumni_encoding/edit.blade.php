@@ -1,5 +1,13 @@
 {{-- resources/views/portal/alumni_encoding/edit.blade.php --}}
 <x-app-layout>
+    @php
+    /** 
+     * Local protected reference to prevent intake partial
+     * from leaking auth()->user() defaults
+     */
+    $alumnusLocal = $alumnus;
+@endphp
+
     <x-slot name="header">
         <div class="flex items-start justify-between gap-4">
             <div>
@@ -225,7 +233,8 @@
                 @method('PUT')
 
                 {{-- shared form partial (OK to reuse) --}}
-                @include('user._intake_form', ['alumnus' => $alumnus])
+                @include('user._intake_form', ['alumnus' => $alumnus, 'prefill_from_auth' => false])
+
 
                 <div class="mt-6">
                     <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
@@ -236,7 +245,7 @@
         </div>
 
         {{-- ✅ Portal-only JS (DO NOT use user._intake_form_js) --}}
-        @include('portal.alumni_encoding._intake_js', ['alumnus' => $alumnus])
+       @include('portal.alumni_encoding._intake_js', ['alumnus' => $alumnusLocal])
 
     </div>
 </x-app-layout>
