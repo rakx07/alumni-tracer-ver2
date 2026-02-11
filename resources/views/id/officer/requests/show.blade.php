@@ -93,12 +93,26 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">New Status</label>
+                                @php
+                                    $currentStatus = old('status', $request->status);
+                                @endphp
+
                                 <select name="status" id="status"
-                                        class="mt-1 w-full rounded border-gray-300">
+                                        class="mt-1 w-full rounded border-gray-300"
+                                        {{ $request->status === 'RELEASED' ? 'disabled' : '' }}>
                                     @foreach(['APPROVED','PROCESSING','DECLINED','READY_FOR_PICKUP','RELEASED'] as $s)
-                                        <option value="{{ $s }}">{{ $s }}</option>
+                                        <option value="{{ $s }}" {{ $currentStatus === $s ? 'selected' : '' }}>
+                                            {{ $s }}
+                                        </option>
                                     @endforeach
                                 </select>
+
+                                @if($request->status === 'RELEASED')
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        This request is already RELEASED and can no longer be changed.
+                                    </div>
+                                @endif
+
                                 <div class="text-xs text-gray-500 mt-1">
                                     Declined & Released will automatically end the active request.
                                 </div>

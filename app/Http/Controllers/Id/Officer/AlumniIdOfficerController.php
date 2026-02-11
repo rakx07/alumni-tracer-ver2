@@ -139,5 +139,23 @@ class AlumniIdOfficerController extends Controller
             DB::rollBack();
             throw $e;
         }
-    }
+    
+                    $rank = [
+            'PENDING' => 0,
+            'APPROVED' => 1,
+            'PROCESSING' => 2,
+            'READY_FOR_PICKUP' => 3,
+            'RELEASED' => 4,
+            'DECLINED' => 99, // treat as terminal (or separate handling)
+            ];
+
+            if ($status !== 'DECLINED') {
+                if (($rank[$status] ?? -1) < ($rank[$req->status] ?? -1)) {
+                    return back()->withErrors(['status' => 'You cannot move the status backwards.']);
+                }
+            }
+
+
+
+        }
 }
