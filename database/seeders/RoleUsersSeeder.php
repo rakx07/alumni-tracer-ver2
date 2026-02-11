@@ -11,7 +11,7 @@ class RoleUsersSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'imis@ndmu.edu.ph'],
+            ['email' => 'mis@ndmu.edu.ph'],
             [
                 'name' => 'IT Admin',
                 'first_name' => 'MIS',
