@@ -64,98 +64,96 @@ class AlumniIdOfficerController extends Controller
         return view('id.officer.requests.show', compact('request'));
     }
 
-    public function updateStatus(Request $httpRequest, $id)
-    {
-        $this->requireOfficerOrItAdmin();
+public function updateStatus(Request $httpRequest, $id)
+{
+    $this->requireOfficerOrItAdmin();
 
-        $req = AlumniIdRequest::lockForUpdate()->findOrFail($id);
+    $validated = $httpRequest->validate([
+        'status' => ['required', Rule::in([
+            'APPROVED',
+            'PROCESSING',
+            'DECLINED',
+            'READY_FOR_PICKUP',
+            'RELEASED',
+        ])],
+        'remarks' => ['nullable','string','max:5000'],
+    ]);
 
-        $validated = $httpRequest->validate([
-            'status' => ['required', Rule::in([
-                'APPROVED',
-                'PROCESSING',
-                'DECLINED',
-                'READY_FOR_PICKUP',
-                'RELEASED',
-            ])],
-            'remarks' => ['nullable','string','max:5000'],
+    $newStatus = $validated['status'];
+    $remarks   = $validated['remarks'] ?? null;
+
+    // Decline must have remarks
+    if ($newStatus === 'DECLINED' && !$remarks) {
+        return back()->withErrors(['remarks' => 'Remarks is required when declining a request.']);
+    }
+
+    $actionMap = [
+        'APPROVED'        => 'APPROVED',
+        'PROCESSING'      => 'SET_PROCESSING',
+        'DECLINED'        => 'DECLINED',
+        'READY_FOR_PICKUP'=> 'SET_READY_FOR_PICKUP',
+        'RELEASED'        => 'RELEASED',
+    ];
+
+    // Prevent moving backwards (except DECLINED which is terminal)
+    $rank = [
+        'PENDING'          => 0,
+        'APPROVED'         => 1,
+        'PROCESSING'       => 2,
+        'READY_FOR_PICKUP' => 3,
+        'RELEASED'         => 4,
+        'DECLINED'         => 99, // terminal
+    ];
+
+    return DB::transaction(function () use ($id, $newStatus, $remarks, $actionMap, $rank) {
+
+        // ✅ lockForUpdate MUST be inside the transaction
+        $req = AlumniIdRequest::where('id', $id)->lockForUpdate()->firstOrFail();
+
+        $currentStatus = $req->status; // keep original BEFORE changing it
+
+        if ($newStatus !== 'DECLINED') {
+            if (($rank[$newStatus] ?? -1) < ($rank[$currentStatus] ?? -1)) {
+                return back()->withErrors(['status' => 'You cannot move the status backwards.']);
+            }
+        }
+
+        // Update main fields
+        $req->status        = $newStatus;
+        $req->remarks       = $remarks;
+        $req->last_acted_by = Auth::id();
+
+        // Set timestamps only when entering that state
+        if ($newStatus === 'APPROVED' && !$req->approved_at) {
+            $req->approved_at = now();
+        } elseif ($newStatus === 'PROCESSING' && !$req->processing_at) {
+            $req->processing_at = now();
+        } elseif ($newStatus === 'READY_FOR_PICKUP' && !$req->ready_at) {
+            $req->ready_at = now();
+        } elseif ($newStatus === 'RELEASED' && !$req->released_at) {
+            $req->released_at = now();
+        } elseif ($newStatus === 'DECLINED' && !$req->declined_at) {
+            $req->declined_at = now();
+        }
+
+        // End active request when DECLINED or RELEASED
+        if (in_array($newStatus, ['DECLINED','RELEASED'], true)) {
+            $req->is_active_request = null; // ✅ correct for unique constraint
+        }
+
+        $req->save();
+
+        AlumniIdRequestLog::create([
+            'request_id'    => $req->id,
+            'actor_user_id' => Auth::id(),
+            'action'        => $actionMap[$newStatus] ?? 'UPDATED_DETAILS',
+            'remarks'       => $remarks,
         ]);
 
-        // Map status -> log action + timestamp field
-        $status = $validated['status'];
-        $remarks = $validated['remarks'] ?? null;
+        return redirect()
+            ->route('id.officer.requests.show', $req->id)
+            ->with('success', "Request updated to {$newStatus}.");
+    });
+}
 
-        $actionMap = [
-            'APPROVED' => 'APPROVED',
-            'PROCESSING' => 'SET_PROCESSING',
-            'DECLINED' => 'DECLINED',
-            'READY_FOR_PICKUP' => 'SET_READY_FOR_PICKUP',
-            'RELEASED' => 'RELEASED',
-        ];
-
-        // Decline must have remarks
-        if ($status === 'DECLINED' && !$remarks) {
-            return back()->withErrors(['remarks' => 'Remarks is required when declining a request.']);
-        }
-
-        DB::beginTransaction();
-        try {
-            $req->status = $status;
-            $req->remarks = $remarks;
-
-            $req->last_acted_by = Auth::id();
-
-            if ($status === 'APPROVED') {
-                $req->approved_at = now();
-            } elseif ($status === 'PROCESSING') {
-                $req->processing_at = now();
-            } elseif ($status === 'READY_FOR_PICKUP') {
-                $req->ready_at = now();
-            } elseif ($status === 'RELEASED') {
-                $req->released_at = now();
-            } elseif ($status === 'DECLINED') {
-                $req->declined_at = now();
-            }
-
-            // When DECLINED or RELEASED -> allow user to request again
-            if (in_array($status, ['DECLINED','RELEASED'], true)) {
-                $req->is_active_request = 0;
-            }
-
-            $req->save();
-
-            AlumniIdRequestLog::create([
-                'request_id' => $req->id,
-                'actor_user_id' => Auth::id(),
-                'action' => $actionMap[$status] ?? 'UPDATED_DETAILS',
-                'remarks' => $remarks,
-            ]);
-
-            DB::commit();
-
-            return redirect()->route('id.officer.requests.show', $req->id)
-                ->with('success', "Request updated to {$status}.");
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    
-                    $rank = [
-            'PENDING' => 0,
-            'APPROVED' => 1,
-            'PROCESSING' => 2,
-            'READY_FOR_PICKUP' => 3,
-            'RELEASED' => 4,
-            'DECLINED' => 99, // treat as terminal (or separate handling)
-            ];
-
-            if ($status !== 'DECLINED') {
-                if (($rank[$status] ?? -1) < ($rank[$req->status] ?? -1)) {
-                    return back()->withErrors(['status' => 'You cannot move the status backwards.']);
-                }
-            }
-
-
-
-        }
 }
