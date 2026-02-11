@@ -121,8 +121,27 @@
 
             <div>
                 <label class="block text-sm font-medium">Birthdate</label>
-                <input type="date" name="birthdate" class="w-full border rounded p-2"
-                       value="{{ old('birthdate', $alumnus->birthdate ?? '') }}">
+                        @php
+                $birthVal = old('birthdate');
+
+                if ($birthVal === null) {
+                    // $alumnus->birthdate may be Carbon (casted) or string
+                    $birthVal = $alumnus?->birthdate
+                        ? \Illuminate\Support\Carbon::parse($alumnus->birthdate)->format('Y-m-d')
+                        : '';
+                } else {
+                    // old() could include time, normalize too
+                    try {
+                        $birthVal = \Illuminate\Support\Carbon::parse($birthVal)->format('Y-m-d');
+                    } catch (\Throwable $e) {
+                        $birthVal = '';
+                    }
+                }
+            @endphp
+
+            <input type="date" name="birthdate" class="w-full border rounded p-2"
+                value="{{ $birthVal }}">
+
             </div>
 
             <div>
