@@ -163,11 +163,10 @@
                                     // small badge colors
                                     $badge = match($status) {
                                         'APPROVED' => ['bg' => 'rgba(134,239,172,.18)', 'bd' => 'rgba(134,239,172,.35)', 'tx' => '#D1FAE5'],
-                                        'PROCESSING' => ['bg' => 'rgba(253,230,138,.18)', 'bd' => 'rgba(253,230,138,.35)', 'tx' => '#FEF3C7'],
-                                        'READY_FOR_PICKUP' => ['bg' => 'rgba(147,197,253,.18)', 'bd' => 'rgba(147,197,253,.35)', 'tx' => '#DBEAFE'],
-                                       'DECLINED' => ['bg' => '#FEE2E2','bd' => '#FCA5A5','tx' => '#991B1B'
-                                    ],
-                                        'RELEASED' => ['bg' => 'rgba(229,231,235,.25)', 'bd' => 'rgba(229,231,235,.35)', 'tx' => '#FFFFFF'],
+                                        'PROCESSING' => ['bg' => 'rgba(253,230,138,.18)', 'bd' => 'rgba(253,230,138,.35)', 'tx' => '#000000'],
+                                        'READY_FOR_PICKUP' => ['bg' => 'rgba(147,197,253,.18)', 'bd' => 'rgba(147,197,253,.35)', 'tx' => '#000000'],
+                                       'DECLINED' => ['bg' => '#FEE2E2','bd' => '#FCA5A5','tx' => '#991B1B'],
+                                        'RELEASED' => ['bg' => 'rgba(229,231,235,.25)', 'bd' => 'rgba(229,231,235,.35)', 'tx' => '#000000'],
                                         default => ['bg' => 'rgba(255,255,255,.10)', 'bd' => 'rgba(227,199,122,.25)', 'tx' => '#FFFFFF'],
                                     };
                                 @endphp
