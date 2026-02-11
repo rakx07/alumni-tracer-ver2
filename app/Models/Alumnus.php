@@ -70,4 +70,18 @@ public function audits()
 {
     return $this->hasMany(AlumniAudit::class, 'alumnus_id');
 }
+
+//For ID Request link
+public function alumniIdRequests()
+{
+    return $this->hasMany(\App\Models\AlumniIdRequest::class, 'alumnus_id');
+}
+
+public function activeAlumniIdRequest()
+{
+    return $this->hasOne(\App\Models\AlumniIdRequest::class, 'alumnus_id')
+        ->where('is_active_request', 1);
+}
+
+
 }

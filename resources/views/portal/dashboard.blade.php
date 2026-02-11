@@ -1,4 +1,4 @@
-{{-- resources/views/portal/dashboard.blade.php (or your current dashboard view) --}}
+{{-- resources/views/portal/dashboard.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-start justify-between gap-4">
@@ -21,7 +21,7 @@
         </div>
     </x-slot>
 
-        @php
+    @php
         $user = auth()->user();
         $role = $user->role ?? 'user';
         $roleLabel = match($role) {
@@ -40,7 +40,6 @@
             'with_contact' => null,
         ];
     @endphp
-
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
@@ -68,68 +67,94 @@
                             </p>
 
                             <div class="mt-4 flex flex-wrap gap-2">
-                            <a href="{{ route('portal.records.index') }}"
-                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
-                            style="background:#E3C77A; color:#0B3D2E;">
-                                Manage Alumni Records
-                            </a>
 
-                            <a href="{{ route('intake.form') }}"
-                            class="inline-flex items-center px-4 py-2 rounded font-semibold border"
-                            style="border-color:rgba(227,199,122,.65); color:#fff;">
-                                Alumni Intake Form
-                            </a>
-
-                            {{-- ✅ NEW: Account Settings --}}
-                            <a href="{{ route('profile.edit') }}"
-                            class="inline-flex items-center px-4 py-2 rounded font-semibold border"
-                            style="border-color:rgba(255,255,255,.45); color:#fff;">
-                                Account Settings
-                            </a>
-
-                             @if($isOfficer)
-                            @if(Route::has('events.calendar'))
-                                <a href="{{ route('events.calendar') }}"
-                                class="inline-flex items-center px-4 py-2 rounded font-semibold"
-                                style="background:rgba(227,199,122,.18); border:1px solid rgba(227,199,122,.55); color:#fff;">
-                                    Calendar of Events
+                                <a href="{{ route('portal.records.index') }}"
+                                   class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                   style="background:#E3C77A; color:#0B3D2E;">
+                                    Manage Alumni Records
                                 </a>
-                            @endif
 
-                            @if(Route::has('portal.events.index'))
-                                <a href="{{ route('portal.events.index') }}"
-                                class="inline-flex items-center px-4 py-2 rounded font-semibold"
-                                style="background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff;">
-                                    Manage Events
+                                <a href="{{ route('intake.form') }}"
+                                   class="inline-flex items-center px-4 py-2 rounded font-semibold border"
+                                   style="border-color:rgba(227,199,122,.65); color:#fff;">
+                                    Alumni Intake Form
                                 </a>
-                            @endif
-                        @endif       
 
+                                {{-- ✅ Account Settings --}}
+                                <a href="{{ route('profile.edit') }}"
+                                   class="inline-flex items-center px-4 py-2 rounded font-semibold border"
+                                   style="border-color:rgba(255,255,255,.45); color:#fff;">
+                                    Account Settings
+                                </a>
 
-                            {{-- ✅ NEW: User Management (IT Admin only) --}}
-                            {{-- ✅ IT Admin tools --}}
-                        @if(($role ?? null) === 'it_admin')
-                            <a href="{{ route('itadmin.users.index') }}"
-                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
-                            style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
-                                User Management
-                            </a>
+                                {{-- ✅ NEW: Alumni ID Request (All users) --}}
+                                @if(Route::has('id.user.request.status'))
+                                    <a href="{{ route('id.user.request.status') }}"
+                                       class="inline-flex items-center px-4 py-2 rounded font-semibold border"
+                                       style="border-color:rgba(227,199,122,.65); color:#fff;">
+                                        Alumni ID Request
+                                    </a>
+                                @endif
 
-                            <a href="{{ route('itadmin.programs.index') }}"
-                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
-                            style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
-                                Programs
-                            </a>
+                                {{-- ✅ Officer tools --}}
+                                @if($isOfficer)
+                                    @if(Route::has('events.calendar'))
+                                        <a href="{{ route('events.calendar') }}"
+                                           class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                           style="background:rgba(227,199,122,.18); border:1px solid rgba(227,199,122,.55); color:#fff;">
+                                            Calendar of Events
+                                        </a>
+                                    @endif
 
-                            <a href="{{ route('itadmin.strands.index') }}"
-                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
-                            style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
-                                Strands
-                            </a>
-                        @endif
+                                    @if(Route::has('portal.events.index'))
+                                        <a href="{{ route('portal.events.index') }}"
+                                           class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                           style="background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff;">
+                                            Manage Events
+                                        </a>
+                                    @endif
+                                @endif
 
-                        </div>
+                                {{-- ✅ NEW: Manage Alumni ID Requests (Alumni Officer / IT Admin only) --}}
+                                @if(in_array($role, ['alumni_officer','it_admin'], true) && Route::has('id.officer.requests.index'))
+                                    <a href="{{ route('id.officer.requests.index') }}"
+                                       class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                       style="background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff;">
+                                        Manage Alumni ID Requests
+                                    </a>
+                                @endif
 
+                                {{-- ✅ NEW: Assisted Alumni ID Request (Alumni Officer / IT Admin only) --}}
+                                @if(in_array($role, ['alumni_officer','it_admin'], true) && Route::has('id.officer.requests.assisted.create'))
+                                    <a href="{{ route('id.officer.requests.assisted.create') }}"
+                                       class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                       style="background:rgba(227,199,122,.18); border:1px solid rgba(227,199,122,.55); color:#fff;">
+                                        Assisted Alumni ID Request
+                                    </a>
+                                @endif
+
+                                {{-- ✅ IT Admin tools --}}
+                                @if(($role ?? null) === 'it_admin')
+                                    <a href="{{ route('itadmin.users.index') }}"
+                                       class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                       style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
+                                        User Management
+                                    </a>
+
+                                    <a href="{{ route('itadmin.programs.index') }}"
+                                       class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                       style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
+                                        Programs
+                                    </a>
+
+                                    <a href="{{ route('itadmin.strands.index') }}"
+                                       class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                       style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
+                                        Strands
+                                    </a>
+                                @endif
+
+                            </div>
                         </div>
 
                         {{-- Quick status card --}}
@@ -232,26 +257,57 @@
                             <div class="text-sm font-semibold" style="color:#0B3D2E;">Review New Entries</div>
                             <div class="text-xs text-gray-600 mt-1">Browse recent records efficiently.</div>
                         </a>
-                        {{-- ✅ NEW: Events cards (Alumni Officer/Admin/IT Admin) --}}
-                @if($isOfficer)
-                    @if(Route::has('portal.events.index'))
-                        <a href="{{ route('portal.events.index') }}"
-                        class="p-4 rounded-lg border hover:shadow-sm transition"
-                        style="border-color:#E3C77A;">
-                            <div class="text-sm font-semibold" style="color:#0B3D2E;">Manage Events</div>
-                            <div class="text-xs text-gray-600 mt-1">Create, edit, publish, and organize alumni events.</div>
-                        </a>
-                    @endif
 
-                    @if(Route::has('events.calendar'))
-                        <a href="{{ route('events.calendar') }}"
-                        class="p-4 rounded-lg border hover:shadow-sm transition"
-                        style="border-color:#E3C77A;">
-                            <div class="text-sm font-semibold" style="color:#0B3D2E;">Calendar of Events</div>
-                            <div class="text-xs text-gray-600 mt-1">View upcoming events as seen by alumni users.</div>
-                        </a>
-                    @endif
-                @endif
+                        {{-- ✅ NEW: Alumni ID Request (user side) --}}
+                        @if(Route::has('id.user.request.status'))
+                            <a href="{{ route('id.user.request.status') }}"
+                               class="p-4 rounded-lg border hover:shadow-sm transition"
+                               style="border-color:#E3C77A;">
+                                <div class="text-sm font-semibold" style="color:#0B3D2E;">Alumni ID Request</div>
+                                <div class="text-xs text-gray-600 mt-1">Submit or track your Alumni ID request.</div>
+                            </a>
+                        @endif
+
+                        {{-- ✅ NEW: Officer/IT Admin Alumni ID management --}}
+                        @if(in_array($role, ['alumni_officer','it_admin'], true) && Route::has('id.officer.requests.index'))
+                            <a href="{{ route('id.officer.requests.index') }}"
+                               class="p-4 rounded-lg border hover:shadow-sm transition"
+                               style="border-color:#E3C77A;">
+                                <div class="text-sm font-semibold" style="color:#0B3D2E;">Manage Alumni ID Requests</div>
+                                <div class="text-xs text-gray-600 mt-1">Approve, process, mark ready, and release IDs.</div>
+                            </a>
+                        @endif
+
+                        {{-- ✅ NEW: Assisted create --}}
+                        @if(in_array($role, ['alumni_officer','it_admin'], true) && Route::has('id.officer.requests.assisted.create'))
+                            <a href="{{ route('id.officer.requests.assisted.create') }}"
+                               class="p-4 rounded-lg border hover:shadow-sm transition"
+                               style="border-color:#E3C77A;">
+                                <div class="text-sm font-semibold" style="color:#0B3D2E;">Assisted ID Request</div>
+                                <div class="text-xs text-gray-600 mt-1">Create a request on behalf of PWD/Senior alumni.</div>
+                            </a>
+                        @endif
+
+                        {{-- ✅ Events cards (Officer/Admin/IT Admin) --}}
+                        @if($isOfficer)
+                            @if(Route::has('portal.events.index'))
+                                <a href="{{ route('portal.events.index') }}"
+                                   class="p-4 rounded-lg border hover:shadow-sm transition"
+                                   style="border-color:#E3C77A;">
+                                    <div class="text-sm font-semibold" style="color:#0B3D2E;">Manage Events</div>
+                                    <div class="text-xs text-gray-600 mt-1">Create, edit, publish, and organize alumni events.</div>
+                                </a>
+                            @endif
+
+                            @if(Route::has('events.calendar'))
+                                <a href="{{ route('events.calendar') }}"
+                                   class="p-4 rounded-lg border hover:shadow-sm transition"
+                                   style="border-color:#E3C77A;">
+                                    <div class="text-sm font-semibold" style="color:#0B3D2E;">Calendar of Events</div>
+                                    <div class="text-xs text-gray-600 mt-1">View upcoming events as seen by alumni users.</div>
+                                </a>
+                            @endif
+                        @endif
 
                     </div>
                 </div>
@@ -295,26 +351,6 @@
                         </div>
                     </div>
                 </div>
-                {{-- ✅ NEW: Events cards (Alumni Officer/Admin/IT Admin)
-                @if($isOfficer)
-                    @if(Route::has('portal.events.index'))
-                        <a href="{{ route('portal.events.index') }}"
-                        class="p-4 rounded-lg border hover:shadow-sm transition"
-                        style="border-color:#E3C77A;">
-                            <div class="text-sm font-semibold" style="color:#0B3D2E;">Manage Events</div>
-                            <div class="text-xs text-gray-600 mt-1">Create, edit, publish, and organize alumni events.</div>
-                        </a>
-                    @endif
-
-                    @if(Route::has('events.calendar'))
-                        <a href="{{ route('events.calendar') }}"
-                        class="p-4 rounded-lg border hover:shadow-sm transition"
-                        style="border-color:#E3C77A;">
-                            <div class="text-sm font-semibold" style="color:#0B3D2E;">Calendar of Events</div>
-                            <div class="text-xs text-gray-600 mt-1">View upcoming events as seen by alumni users.</div>
-                        </a>
-                    @endif
-                @endif --}}
 
             </div>
 

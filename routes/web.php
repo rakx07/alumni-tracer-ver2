@@ -12,6 +12,8 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\Portal\AlumniEncodingController;
 use App\Http\Controllers\ITAdmin\ProgramController;
 use App\Http\Controllers\ITAdmin\StrandController;
+use App\Http\Controllers\Id\User\AlumniIdRequestController;
+use App\Http\Controllers\Id\Officer\AlumniIdOfficerController;
 
 Route::get('/', fn () => view('welcome'));
 
@@ -138,6 +140,40 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
         // audit viewer
         Route::get('/{alumnus}/audit', [AlumniEncodingController::class, 'audit'])->name('audit');
     });
+
+    //This is for ID requesting process routes
+
+    /*
+|--------------------------------------------------------------------------
+| Alumni ID - User Side
+|--------------------------------------------------------------------------
+*/
+    Route::middleware(['auth'])
+        ->prefix('id/user/request')
+        ->name('id.user.request.')
+        ->group(function () {
+            Route::get('/', [AlumniIdRequestController::class, 'status'])->name('status');
+            Route::get('/create', [AlumniIdRequestController::class, 'create'])->name('create');
+            Route::post('/', [AlumniIdRequestController::class, 'store'])->name('store');
+        });
+
+/*
+|--------------------------------------------------------------------------
+| Alumni ID - Officer / IT Admin Side
+|--------------------------------------------------------------------------
+*/
+    Route::middleware(['auth', 'role:alumni_officer,it_admin'])
+        ->prefix('id/officer/requests')
+        ->name('id.officer.requests.')
+        ->group(function () {
+            Route::get('/', [AlumniIdOfficerController::class, 'index'])->name('index');
+            Route::get('/{id}', [AlumniIdOfficerController::class, 'show'])->name('show');
+            Route::post('/{id}/update-status', [AlumniIdOfficerController::class, 'updateStatus'])->name('updateStatus');
+
+        Route::get('/assisted/create', [\App\Http\Controllers\Id\Officer\AlumniIdOfficerAssistedController::class, 'create'])->name('assisted.create');
+        Route::post('/assisted/store', [\App\Http\Controllers\Id\Officer\AlumniIdOfficerAssistedController::class, 'store'])->name('assisted.store');
+        });
+
 
 
 require __DIR__.'/auth.php';

@@ -12,7 +12,8 @@
                 default => 'User',
             };
 
-            $submitted = (bool) $alumnus;
+           $submitted = (bool) $alumnus && (($alumnus->record_status ?? null) !== 'draft');
+
         @endphp
 
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -87,6 +88,15 @@
                                    style="border-color:rgba(255,255,255,.45); color:#fff;">
                                     Manage Password & Email
                                 </a>
+
+                                {{-- ✅ NEW: Alumni ID Request --}}
+                                @if(Route::has('id.user.request.status'))
+                                    <a href="{{ route('id.user.request.status') }}"
+                                       class="inline-flex items-center px-4 py-2 rounded font-semibold border"
+                                       style="border-color:rgba(227,199,122,.65); color:#fff;">
+                                        Alumni ID Request
+                                    </a>
+                                @endif
                             </div>
                         </div>
 
@@ -197,6 +207,16 @@
                             <div class="text-sm font-semibold" style="color:#0B3D2E;">Account Settings</div>
                             <div class="text-xs text-gray-600 mt-1">Change password, update email, and manage account.</div>
                         </a>
+
+                        {{-- ✅ NEW: Alumni ID Request (user side) --}}
+                        @if(Route::has('id.user.request.status'))
+                            <a href="{{ route('id.user.request.status') }}"
+                               class="p-4 rounded-lg border hover:shadow-sm transition"
+                               style="border-color:#E3C77A;">
+                                <div class="text-sm font-semibold" style="color:#0B3D2E;">Alumni ID Request</div>
+                                <div class="text-xs text-gray-600 mt-1">Submit or track your Alumni ID request.</div>
+                            </a>
+                        @endif
                     </div>
 
                     <div class="mt-5 rounded-lg p-4"
