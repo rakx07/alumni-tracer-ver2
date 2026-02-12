@@ -14,12 +14,19 @@ use App\Http\Controllers\ITAdmin\ProgramController;
 use App\Http\Controllers\ITAdmin\StrandController;
 use App\Http\Controllers\Id\User\AlumniIdRequestController;
 use App\Http\Controllers\Id\Officer\AlumniIdOfficerController;
+use App\Http\Controllers\Portal\CareerPostAdminController;
+use App\Http\Controllers\PublicCareerController;
 
 Route::get('/', fn () => view('welcome'));
 
 /* ================= PUBLIC EVENTS ================= */
 Route::get('/events/calendar', [EventController::class, 'public'])->name('events.calendar');
 Route::get('/events/{event}', [EventController::class, 'showPublic'])->name('events.show');
+
+/* ================= PUBLIC CAREERS ================= */
+Route::get('/careers', [PublicCareerController::class, 'index'])->name('careers.index');
+Route::get('/careers/{post}', [PublicCareerController::class, 'show'])->name('careers.show');
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -114,6 +121,21 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
         Route::put('/{event}', [EventController::class, 'update'])->name('update');
         Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
     });
+
+
+    /* ================= PORTAL CAREERS (Officer/Admin) ================= */
+Route::middleware(['auth', 'role:alumni_officer,it_admin'])
+    ->prefix('portal/careers')
+    ->name('portal.careers.admin.')
+    ->group(function () {
+        Route::get('/', [CareerPostAdminController::class, 'index'])->name('index');
+        Route::get('/create', [CareerPostAdminController::class, 'create'])->name('create');
+        Route::post('/', [CareerPostAdminController::class, 'store'])->name('store');
+        Route::get('/{post}/edit', [CareerPostAdminController::class, 'edit'])->name('edit');
+        Route::put('/{post}', [CareerPostAdminController::class, 'update'])->name('update');
+        Route::delete('/{post}', [CareerPostAdminController::class, 'destroy'])->name('destroy');
+    });
+
 
     //This is added for alumni_encoding
     Route::middleware(['auth','role:alumni_officer,it_admin,admin'])

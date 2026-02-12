@@ -397,9 +397,19 @@
 
 <body>
     @php
+        use App\Models\CareerPost;
+
         $newsUrl = 'https://www.ndmu.edu.ph/news-and-updates';
         $fbUrl   = 'https://www.facebook.com/ndmuofficial/';
+
+        // Landing-page preview (latest 6)
+        $careerPosts = CareerPost::withCount('attachments')
+            ->where('is_published', true)
+            ->orderByDesc('id')
+            ->take(6)
+            ->get();
     @endphp
+
 
     {{-- TOP BAR --}}
     <div class="topbar">
@@ -497,7 +507,8 @@
 
                 <a href="#news">News & Features</a>
                 <a href="#about">About</a>
-                <a href="#contact">Contact</a>
+                <a href="#careers">Careers</a>
+
             </div>
         </div>
     </div>
@@ -644,6 +655,79 @@
         </div>
     </section>
 
+    {{-- CAREERS --}}
+<section id="careers" class="section" style="padding-top:0;">
+    <div class="container">
+        <div class="section-title">
+            <h2>Careers</h2>
+            <p>Job opportunities posted by the Office of Alumni Relations and ICT.</p>
+        </div>
+
+        @if($careerPosts->count())
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                @foreach($careerPosts as $post)
+                    @php
+                        $status = $post->statusLabel();
+                        $badgeClass =
+                            $status === 'Active' ? 'bg-green-50 text-green-800 border-green-200' :
+                            ($status === 'Upcoming' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                            ($status === 'Expired' ? 'bg-gray-50 text-gray-800 border-gray-200' :
+                            'bg-yellow-50 text-yellow-900 border-yellow-200'));
+                    @endphp
+
+                    <a class="linkcard" href="{{ url('/careers') }}" title="Open Careers">
+                        <div class="linkicon green">💼</div>
+                        <div class="linkmeta">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                                <strong>{{ $post->title }}</strong>
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold border {{ $badgeClass }}">
+                                    {{ $status }}
+                                </span>
+                            </div>
+
+                            <span>
+                                {{ $post->company ?: '—' }}
+                                @if($post->location) • {{ $post->location }} @endif
+                                @if($post->employment_type) • {{ $post->employment_type }} @endif
+                            </span>
+
+                            <span style="margin-top:6px;">
+                                @if($post->start_date || $post->end_date)
+                                    {{ $post->start_date ? $post->start_date->format('M d, Y') : '—' }}
+                                    —
+                                    {{ $post->end_date ? $post->end_date->format('M d, Y') : '—' }}
+                                @else
+                                    Date range not specified
+                                @endif
+                                • {{ $post->attachments_count }} file(s)
+                            </span>
+
+                            <em>View careers →</em>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+
+            <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+                <a class="btn btn-soft" href="{{ url('/careers') }}">View all Careers</a>
+
+                @auth
+                    @if (in_array(auth()->user()->role, ['it_admin','alumni_officer'], true))
+                        <a class="btn btn-outline" href="{{ route('portal.careers.admin.index') }}">Manage Careers</a>
+                    @endif
+                @endauth
+            </div>
+        @else
+            <div class="card">
+                <h3>No job posts yet</h3>
+                <p>Career opportunities will appear here once posted by the Office.</p>
+            </div>
+        @endif
+    </div>
+</section>
+
+
+
     {{-- NEWS --}}
     <section id="news" class="section" style="padding-top:0;">
         <div class="container">
@@ -689,7 +773,8 @@
     </section>
 
     {{-- FOOTER --}}
-    <footer id="contact">
+    <footer id="careers">
+
         <div class="container">
             <div class="footer-inner">
                 <div>
@@ -736,6 +821,26 @@
                         <strong>Phone:</strong> (083) 228-3598 Local 166
                     </p>
                 </div>
+
+                <div class="card" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#fff;">
+                        <h3 style="margin:0 0 8px;">Careers</h3>
+                        <p style="color:rgba(255,255,255,.90);margin:0;">
+                            View job opportunities posted for NDMU alumni. Open the Careers section above to see the latest openings,
+                            including upcoming and expired postings with labels.
+                        </p>
+
+                        <div class="footer-links" style="margin-top:10px;">
+                            <a href="#careers">Careers (Landing)</a>
+                            <a href="{{ url('/careers') }}">View All Careers</a>
+
+                            @auth
+                                @if (in_array(auth()->user()->role, ['it_admin','alumni_officer'], true))
+                                    <a href="{{ route('portal.careers.admin.index') }}">Manage Careers</a>
+                                @endif
+                            @endauth
+                        </div>
+                    </div>
+
             </div>
 
             <div class="copyright">

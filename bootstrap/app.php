@@ -12,9 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         //
-       $middleware->alias([
-        'role' => \App\Http\Middleware\RoleMiddleware::class,  ]);
-    
+        $middleware->alias([
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'careers.manage' => \App\Http\Middleware\EnsureCareerManager::class,
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\EnsureUserIsActive::class,
             \App\Http\Middleware\ForcePasswordChange::class,
@@ -23,4 +25,3 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
-
