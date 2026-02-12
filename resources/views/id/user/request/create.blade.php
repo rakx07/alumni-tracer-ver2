@@ -130,25 +130,63 @@
                                 </div>
                             </div>
 
+                            {{-- ✅ NEW: Education summary (Graduated only) --}}
                             <div class="p-3 rounded-lg border bg-gray-50">
-                                <div class="text-xs text-gray-500">Course / Program</div>
-                                <div class="font-semibold">
-                                    {{ $course ?? '—' }}
-                                </div>
-                            </div>
+                                <div class="text-xs text-gray-500">Education (Graduated) — from Intake</div>
 
-                            <div class="p-3 rounded-lg border bg-gray-50">
-                                <div class="text-xs text-gray-500">Graduation Year</div>
-                                <div class="font-semibold">
-                                    {{ $edu->year_graduated ?? '—' }}
-                                </div>
-                            </div>
+                                @if(!empty($eduSummary) && !$eduSummary['missing_eligible'])
+                                    {{-- Latest eligible --}}
+                                    <div class="mt-2">
+                                        <div class="text-xs text-gray-500">Latest Eligible (College/Grad/Law)</div>
+                                        <div class="font-semibold">
+                                            {{ $eduSummary['latest_eligible']['program'] ?? '—' }}
+                                        </div>
+                                        <div class="text-xs text-gray-600 mt-1">
+                                            Year Graduated:
+                                            <span class="font-semibold">{{ $eduSummary['latest_eligible']['year_graduated'] ?? '—' }}</span>
+                                            <span class="mx-2">•</span>
+                                            Level:
+                                            <span class="font-semibold">{{ strtoupper($eduSummary['latest_eligible']['level'] ?? '') }}</span>
+                                        </div>
+                                    </div>
 
-                            <div class="p-3 rounded-lg border bg-gray-50">
-                                <div class="text-xs text-gray-500">Eligible Level Used</div>
-                                <div class="font-semibold">
-                                    {{ isset($edu->level) ? strtoupper($edu->level) : '—' }}
-                                </div>
+                                    {{-- All graduated list --}}
+                                    <div class="mt-3 space-y-2">
+                                        <div class="text-xs text-gray-500 font-semibold">All Graduated Records</div>
+
+                                        @forelse($eduSummary['graduated_list'] as $row)
+                                            <div class="rounded border p-2 bg-white">
+                                                <div class="text-xs text-gray-500">
+                                                    {{ strtoupper($row['level']) }} • {{ $row['year_graduated'] ?? '—' }}
+                                                </div>
+
+                                                @if(!empty($row['program']))
+                                                    <div class="font-semibold">{{ $row['program'] }}</div>
+                                                @endif
+
+                                                @if(!empty($row['strand']))
+                                                    <div class="font-semibold">{{ $row['strand'] }}</div>
+                                                @endif
+                                            </div>
+                                        @empty
+                                            <div class="text-sm text-gray-600">No graduated SHS/College/Grad/Law record found.</div>
+                                        @endforelse
+                                    </div>
+                                @else
+                                    <div class="mt-2 text-sm text-red-700 font-semibold">
+                                        Missing eligible graduated education (College / Graduate School / Law).
+                                    </div>
+                                    <div class="text-xs text-gray-600 mt-1">
+                                        Please update your intake form:
+                                        set <b>Did you graduate?</b> = <b>Yes</b>, provide <b>Program</b> and <b>Year Graduated</b>.
+                                    </div>
+
+                                    <a href="{{ route('intake.form') }}"
+                                       class="mt-3 inline-flex items-center px-3 py-1.5 rounded font-semibold"
+                                       style="background:#E3C77A; color:#0B3D2E;">
+                                        Fix Intake Form
+                                    </a>
+                                @endif
                             </div>
 
                             <div class="rounded-lg p-3"
@@ -177,6 +215,17 @@
                                 No Payment
                             </div>
                         </div>
+
+                        {{-- Optional: show warning above form when missing eligible --}}
+                        @if(!empty($eduSummary) && ($eduSummary['missing_eligible'] ?? false))
+                            <div class="mt-4 rounded-xl border p-4 bg-yellow-50" style="border-color:#FDE68A;">
+                                <div class="font-semibold text-yellow-900">Action required</div>
+                                <div class="text-sm text-yellow-800 mt-1">
+                                    You currently have no <b>graduated</b> College/Graduate School/Law record in your intake form.
+                                    Please update your intake first, then return here.
+                                </div>
+                            </div>
+                        @endif
 
                         <form method="POST"
                               action="{{ route('id.user.request.store') }}"
@@ -267,8 +316,11 @@
                                     Cancel
                                 </a>
 
+                                {{-- If you want to DISABLE submit when missing eligible, uncomment disabled+opacity below --}}
                                 <button type="submit"
-                                        class="px-5 py-2 rounded font-semibold text-white"
+                                        {{-- @if(!empty($eduSummary) && ($eduSummary['missing_eligible'] ?? false)) disabled @endif --}}
+                                        class="px-5 py-2 rounded font-semibold text-white
+                                               {{-- @if(!empty($eduSummary) && ($eduSummary['missing_eligible'] ?? false)) opacity-50 cursor-not-allowed @endif --}}"
                                         style="background:#0B3D2E;">
                                     Submit Request
                                 </button>

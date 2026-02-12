@@ -48,7 +48,11 @@ class AlumniEducation extends Model
     ];
 
     protected $casts = [
-        'did_graduate' => 'integer',
+         'did_graduate' => 'integer', // important (0/1/null)
+        'year_entered' => 'integer',
+        'year_graduated' => 'integer',
+        'last_year_attended' => 'integer',
+        'year_completed' => 'integer',
     ];
 
     /* =========================

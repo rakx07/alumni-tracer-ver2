@@ -114,7 +114,18 @@ class AlumniIdOfficerAssistedController extends Controller
             return back()->withErrors(['alumnus_id' => 'This alumnus already has an ACTIVE Alumni ID request.'])->withInput();
         }
 
-        $edu = $this->pickEligibleEducationOrFail($alumnus->id);
+       $edu = AlumniEducation::with('program')
+        ->where('alumnus_id', $alumnus->id)
+        ->whereIn('level', ['ndmu_college','ndmu_grad_school','ndmu_law'])
+        ->orderByDesc(DB::raw('COALESCE(did_graduate, 0)'))
+        ->orderByDesc('year_graduated')
+        ->orderByDesc('id')
+        ->first();
+
+    if (!$edu) {
+        abort(403, 'You do not have an eligible education record (College / Graduate School / Law) in your intake form.');
+    }
+
 
         // Name snapshot from USERS (your setup)
         $u = null;
@@ -125,7 +136,7 @@ class AlumniIdOfficerAssistedController extends Controller
             return back()->withErrors(['alumnus_id' => 'Selected alumnus is not linked to a user account.'])->withInput();
         }
 
-        $course = $edu->specific_program ?: $edu->degree_program ?: null;
+       $course = $edu->program?->code?: ($edu->specific_program ?: null)?: ($edu->degree_program ?: null);
         $gradYear = $edu->year_graduated ? (int)$edu->year_graduated : null;
 
         DB::beginTransaction();

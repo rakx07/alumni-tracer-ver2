@@ -175,6 +175,39 @@
                                     'DECLINED'         => ['bg'=>'rgba(239,68,68,.12)','bd'=>'rgba(239,68,68,.35)','tx'=>'#B91C1C'],
                                     default            => ['bg'=>'rgba(229,231,235,.45)','bd'=>'rgba(229,231,235,.90)','tx'=>'#374151'],
                                 };
+
+                                /**
+                                 * COURSE CODE ONLY (INDEX ONLY):
+                                 * 1) Use request.course if present (split "BSIT - ..." or "BSIT — ...")
+                                 * 2) Fallback to alumnus latest graduated eligible education program code
+                                 */
+                                $courseCode = null;
+
+                                if (!empty($r->course)) {
+                                    $courseRaw = trim((string)$r->course);
+
+                                    if (str_contains($courseRaw, '—')) {
+                                        $courseCode = trim(explode('—', $courseRaw, 2)[0]);
+                                    } elseif (str_contains($courseRaw, ' - ')) {
+                                        $courseCode = trim(explode(' - ', $courseRaw, 2)[0]);
+                                    } else {
+                                        $courseCode = $courseRaw;
+                                    }
+                                }
+
+                                if (empty($courseCode)) {
+                                    $latestEdu = $r->alumnus?->educations
+                                        ?->whereIn('level', ['ndmu_college','ndmu_grad_school','ndmu_law'])
+                                        ?->where('did_graduate', 1)
+                                        ?->sortByDesc(fn($e) => (int)($e->year_graduated ?? 0))
+                                        ?->first();
+
+                                    $courseCode = $latestEdu?->program?->code
+                                        ?: ($latestEdu?->specific_program ?: null)
+                                        ?: ($latestEdu?->degree_program ?: null);
+                                }
+
+                                $courseCode = $courseCode ?: '—';
                             @endphp
 
                             <tr class="border-t hover:bg-gray-50">
@@ -183,7 +216,10 @@
                                     {{ $r->last_name }}, {{ $r->first_name }} {{ $r->middle_name }}
                                 </td>
                                 <td class="p-3 text-gray-700">{{ $r->request_type }}</td>
-                                <td class="p-3 text-gray-700">{{ $r->course ?? '—' }}</td>
+
+                                {{-- ✅ ONLY THIS CELL CHANGED: show BSIT only (fallback-safe) --}}
+                                <td class="p-3 text-gray-700">{{ $courseCode }}</td>
+
                                 <td class="p-3 text-gray-700">{{ $r->grad_year ?? '—' }}</td>
                                 <td class="p-3">
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
