@@ -191,11 +191,23 @@ public function form()
             // ✅ If alumni.full_name is NOT NULL in DB, always provide a value
             $data['full_name'] = $this->buildFullNameFromUser($user);
 
+            // Force self-service identity + validation
+            $data['encoding_mode'] = 'self_service';
+            $data['encoded_by']    = $user->id;
+
+            // Rule A: self-service auto-validated
+            $data['validated_by']  = $user->id;
+            $data['validated_at']  = now();
+
+            // Optional but recommended: mark record as validated (adjust if you use other statuses)
+            $data['record_status'] = 'validated';
+
             if (!$alumnus) {
                 $alumnus = Alumnus::create($data);
             } else {
                 $alumnus->update($data);
             }
+
 
             // Replace child rows
             $alumnus->educations()->delete();
@@ -206,27 +218,44 @@ public function form()
             foreach ($request->input('educations', []) as $row) {
                 if (empty($row['level'])) continue;
 
-                $alumnus->educations()->create([
-                    'level' => $row['level'],
-                    'student_number' => $row['student_number'] ?? null,
-                    'year_entered' => $row['year_entered'] ?? null,
-                    'year_graduated' => $row['year_graduated'] ?? null,
-                    'last_year_attended' => $row['last_year_attended'] ?? null,
-                    'degree_program' => $row['degree_program'] ?? null,
-                    'specific_program' => $row['specific_program'] ?? null,
-                    'research_title' => $row['research_title'] ?? null,
-                    'thesis_title' => $row['thesis_title'] ?? null,
-                    'strand_track' => $row['strand_track'] ?? null,
-                    'honors_awards' => $row['honors_awards'] ?? null,
-                    'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
-                    'clubs_organizations' => $row['clubs_organizations'] ?? null,
-                    'institution_name' => $row['institution_name'] ?? null,
-                    'institution_address' => $row['institution_address'] ?? null,
-                    'course_degree' => $row['course_degree'] ?? null,
-                    'year_completed' => $row['year_completed'] ?? null,
-                    'scholarship_award' => $row['scholarship_award'] ?? null,
-                    'notes' => $row['notes'] ?? null,
-                ]);
+               $alumnus->educations()->create([
+                'level' => $row['level'],
+
+                // ✅ MUST SAVE so edit can load
+                'did_graduate' => $row['did_graduate'] ?? null,
+                'program_id'   => (($row['program_id'] ?? null) === '__other__') ? null : ($row['program_id'] ?? null),
+                'strand_id'    => $row['strand_id'] ?? null,
+
+                'student_number'     => $row['student_number'] ?? null,
+                'year_entered'       => $row['year_entered'] ?? null,
+                'year_graduated'     => $row['year_graduated'] ?? null,
+                'last_year_attended' => $row['last_year_attended'] ?? null,
+
+                'degree_program' => $row['degree_program'] ?? null,
+
+                // store typed program if Others
+                'specific_program' => (($row['program_id'] ?? null) === '__other__')
+                    ? (trim((string)($row['specific_program'] ?? '')) ?: null)
+                    : (trim((string)($row['specific_program'] ?? '')) ?: null),
+
+                'research_title' => $row['research_title'] ?? null,
+                'thesis_title'   => $row['thesis_title'] ?? null,
+
+                'strand_track' => $row['strand_track'] ?? null,
+
+                'honors_awards'              => $row['honors_awards'] ?? null,
+                'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
+                'clubs_organizations'        => $row['clubs_organizations'] ?? null,
+
+                'institution_name'    => $row['institution_name'] ?? null,
+                'institution_address' => $row['institution_address'] ?? null,
+                'course_degree'       => $row['course_degree'] ?? null,
+                'year_completed'      => $row['year_completed'] ?? null,
+                'scholarship_award'   => $row['scholarship_award'] ?? null,
+                'notes'               => $row['notes'] ?? null,
+            ]);
+
+
             }
 
             // Employments

@@ -498,7 +498,17 @@
             const programSel = div.querySelector('select[data-program]');
 
             levelSel.value = data.level ?? '';
-            gradSel.value  = (data.did_graduate ?? '') === null ? '' : String(data.did_graduate ?? '');
+            const dg = data.did_graduate;
+
+            // normalize did_graduate into "1" | "0" | ""
+            if (dg === true || dg === 1 || dg === "1") {
+                gradSel.value = "1";
+            } else if (dg === false || dg === 0 || dg === "0") {
+                gradSel.value = "0";
+            } else {
+                gradSel.value = "";
+            }
+
 
             populatePrograms(programSel, levelSel.value);
 

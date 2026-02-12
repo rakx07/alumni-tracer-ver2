@@ -203,7 +203,37 @@ public function edit(Alumnus $alumnus)
         $row['year_graduated'] = null;
     }
 
-    $alumnus->educations()->create($row);
+    $alumnus->educations()->create([
+    'level' => $row['level'],
+
+    'did_graduate' => $row['did_graduate'] ?? null,
+    'program_id'   => $row['program_id'] ?? null,
+    'specific_program' => $row['specific_program'] ?? null,
+
+    'strand_id'    => $row['strand_id'] ?? null,
+    'strand_track' => $row['strand_track'] ?? null,
+
+    'student_number'     => $row['student_number'] ?? null,
+    'year_entered'       => $row['year_entered'] ?? null,
+    'year_graduated'     => $row['year_graduated'] ?? null,
+    'last_year_attended' => $row['last_year_attended'] ?? null,
+
+    'degree_program' => $row['degree_program'] ?? null,
+    'research_title' => $row['research_title'] ?? null,
+    'thesis_title'   => $row['thesis_title'] ?? null,
+
+    'honors_awards'              => $row['honors_awards'] ?? null,
+    'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
+    'clubs_organizations'        => $row['clubs_organizations'] ?? null,
+
+    'institution_name'    => $row['institution_name'] ?? null,
+    'institution_address' => $row['institution_address'] ?? null,
+    'course_degree'       => $row['course_degree'] ?? null,
+    'year_completed'      => $row['year_completed'] ?? null,
+    'scholarship_award'   => $row['scholarship_award'] ?? null,
+    'notes'               => $row['notes'] ?? null,
+]);
+
 }
 
 

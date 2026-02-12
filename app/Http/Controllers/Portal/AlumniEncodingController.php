@@ -211,12 +211,64 @@ class AlumniEncodingController extends Controller
                 'email','facebook','nationality','religion',
             ]));
 
-            AlumniEducation::where('alumnus_id', $alumnus->id)->delete();
+           AlumniEducation::where('alumnus_id', $alumnus->id)->delete();
+
             foreach ($request->input('educations', []) as $row) {
-                if (array_filter($row)) {
-                    AlumniEducation::create($row + ['alumnus_id' => $alumnus->id]);
+                if (empty($row['level'])) continue;
+
+                // normalize Others
+                $programId = $row['program_id'] ?? null;
+                $specificProgram = trim((string)($row['specific_program'] ?? '')) ?: null;
+
+                if ($programId === '__other__') {
+                    $programId = null;
+                } else {
+                    // if a real program is selected, you can keep specific_program (or null it)
+                    // choose one behavior; here we keep it as-is if user typed something
                 }
+
+                // normalize graduate fields
+                $didGraduate = $row['did_graduate'] ?? null;
+                $yearGraduated = $row['year_graduated'] ?? null;
+                $lastYearAttended = $row['last_year_attended'] ?? null;
+
+                if ($didGraduate === '1' || $didGraduate === 1) $lastYearAttended = null;
+                if ($didGraduate === '0' || $didGraduate === 0) $yearGraduated = null;
+
+                AlumniEducation::create([
+                    'alumnus_id' => $alumnus->id,
+                    'level'      => $row['level'],
+
+                    'did_graduate' => $didGraduate,
+                    'program_id'   => $programId,
+                    'specific_program' => $specificProgram,
+
+                    'strand_id'    => $row['strand_id'] ?? null,
+                    'strand_track' => $row['strand_track'] ?? null,
+
+                    'student_number'     => $row['student_number'] ?? null,
+                    'year_entered'       => $row['year_entered'] ?? null,
+                    'year_graduated'     => $yearGraduated,
+                    'last_year_attended' => $lastYearAttended,
+
+                    'degree_program' => $row['degree_program'] ?? null,
+                    'research_title' => $row['research_title'] ?? null,
+                    'thesis_title'   => $row['thesis_title'] ?? null,
+
+                    'honors_awards'              => $row['honors_awards'] ?? null,
+                    'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
+                    'clubs_organizations'        => $row['clubs_organizations'] ?? null,
+
+                    'institution_name'    => $row['institution_name'] ?? null,
+                    'institution_address' => $row['institution_address'] ?? null,
+                    'course_degree'       => $row['course_degree'] ?? null,
+                    'year_completed'      => $row['year_completed'] ?? null,
+                    'scholarship_award'   => $row['scholarship_award'] ?? null,
+                    'notes'               => $row['notes'] ?? null,
+                ]);
             }
+
+
 
             AlumniEmployment::where('alumnus_id', $alumnus->id)->delete();
             foreach ($request->input('employments', []) as $row) {
@@ -316,4 +368,26 @@ class AlumniEncodingController extends Controller
 
         return back()->with('success', 'User updated (logged).');
     }
+
+
+    public function validateRecord(Alumnus $alumnus)
+    {
+        // Officers can only validate assisted; IT Admin can validate any
+        if (!$this->isItAdmin()) {
+            abort_unless($alumnus->encoding_mode === 'assisted', 404);
+        }
+
+        $old = $alumnus->only(['record_status','validated_by','validated_at']);
+
+        $alumnus->update([
+            'record_status' => 'validated',
+            'validated_by'  => Auth::id(),
+            'validated_at'  => now(),
+        ]);
+
+        $this->logAudit($alumnus, 'validate', $old, $alumnus->only(['record_status','validated_by','validated_at']));
+
+        return back()->with('success', 'Record validated successfully.');
+    }
+
 }

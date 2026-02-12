@@ -27,7 +27,6 @@ class AlumniEducation extends Model
 
         // Legacy text fields (kept for compatibility)
         'degree_program',
-        'specific_program',
         'research_title',
         'thesis_title',
 
@@ -49,7 +48,7 @@ class AlumniEducation extends Model
     ];
 
     protected $casts = [
-        'did_graduate' => 'boolean',
+        'did_graduate' => 'integer',
     ];
 
     /* =========================
