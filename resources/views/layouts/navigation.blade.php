@@ -89,6 +89,13 @@
                                hover:border-[#0B3D2E]/20 hover:bg-[#0B3D2E]/5">
                         Events Calendar
                     </x-nav-link>
+                    <x-nav-link :href="route('careers.index')" :active="request()->routeIs('careers.*')"
+                        class="rounded-full px-4 py-2 text-sm font-semibold
+                            border border-transparent
+                            hover:border-[#0B3D2E]/20 hover:bg-[#0B3D2E]/5">
+                        Careers
+                    </x-nav-link>
+
                 </div>
             </div>
 
