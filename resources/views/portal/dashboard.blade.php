@@ -106,6 +106,15 @@
                                         </a>
                                     @endif
 
+                                                                        {{-- ✅ NEW: Manage Careers (Alumni Officer / IT Admin) --}}
+                                    @if(in_array($role, ['alumni_officer','it_admin'], true) && Route::has('portal.careers.admin.index'))
+                                        <a href="{{ route('portal.careers.admin.index') }}"
+                                        class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                                        style="background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff;">
+                                            Manage Careers
+                                        </a>
+                                    @endif
+
                                     @if(Route::has('portal.events.index'))
                                         <a href="{{ route('portal.events.index') }}"
                                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
@@ -298,6 +307,16 @@
                                     <div class="text-xs text-gray-600 mt-1">Create, edit, publish, and organize alumni events.</div>
                                 </a>
                             @endif
+
+                                                    {{-- ✅ NEW: Manage Careers (Alumni Officer / IT Admin) --}}
+                        @if(in_array($role, ['alumni_officer','it_admin'], true) && Route::has('portal.careers.admin.index'))
+                            <a href="{{ route('portal.careers.admin.index') }}"
+                            class="p-4 rounded-lg border hover:shadow-sm transition"
+                            style="border-color:#E3C77A;">
+                                <div class="text-sm font-semibold" style="color:#0B3D2E;">Manage Careers</div>
+                                <div class="text-xs text-gray-600 mt-1">Create job posts, set date ranges, upload PDFs/images, and manage visibility.</div>
+                            </a>
+                        @endif
 
                             @if(Route::has('events.calendar'))
                                 <a href="{{ route('events.calendar') }}"
