@@ -76,8 +76,14 @@
 
                 $displayCourse = $displayCourse ?: '—';
 
-                $sigUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($request->signature_path);
-                $isPdf = str_ends_with(strtolower($request->signature_path), '.pdf');
+                // ✅ FIX: do NOT call ->url() on disk instance
+                // Use Storage::url() OR asset('storage/...') fallback
+                $sigPath = (string)($request->signature_path ?? '');
+                $sigUrl = $sigPath !== ''
+                    ? \Illuminate\Support\Facades\Storage::url($sigPath)
+                    : null;
+
+                $isPdf = $sigPath !== '' && str_ends_with(strtolower($sigPath), '.pdf');
             @endphp
 
             <div class="rounded-xl shadow border overflow-hidden" style="border-color:#E3C77A;">
@@ -328,7 +334,9 @@
                         </div>
 
                         <div class="mt-4">
-                            @if($isPdf)
+                            @if(!$sigUrl)
+                                <div class="text-sm text-gray-500">No signature uploaded.</div>
+                            @elseif($isPdf)
                                 <a href="{{ $sigUrl }}" target="_blank"
                                    class="inline-flex items-center px-4 py-2 rounded-lg font-semibold border"
                                    style="border-color:#E3C77A; color:#0B3D2E; background:#FFFBF0;">
@@ -364,20 +372,26 @@
                                 <div class="space-y-2">
                                     @foreach($request->attachments as $a)
                                         @php
-                                            $url = \Illuminate\Support\Facades\Storage::disk('public')->url($a->file_path);
-                                            $isPdfA = str_ends_with(strtolower($a->file_path), '.pdf');
+                                            $filePath = (string)($a->file_path ?? '');
+                                            $url = $filePath !== '' ? \Illuminate\Support\Facades\Storage::url($filePath) : null;
+                                            $isPdfA = $filePath !== '' && str_ends_with(strtolower($filePath), '.pdf');
                                         @endphp
 
                                         <div class="p-4 rounded-lg border" style="background:#FFFBF0; border-color:#EDE7D1;">
                                             <div class="text-sm font-semibold text-gray-900">{{ $a->attachment_type }}</div>
                                             <div class="text-xs text-gray-600 mt-1">
-                                                {{ $a->original_name ?? basename($a->file_path) }}
+                                                {{ $a->original_name ?? ($filePath !== '' ? basename($filePath) : '—') }}
                                             </div>
-                                            <a href="{{ $url }}" target="_blank"
-                                               class="mt-2 inline-flex text-sm underline font-semibold"
-                                               style="color:#0B3D2E;">
-                                                {{ $isPdfA ? 'Open PDF' : 'Open file' }}
-                                            </a>
+
+                                            @if($url)
+                                                <a href="{{ $url }}" target="_blank"
+                                                   class="mt-2 inline-flex text-sm underline font-semibold"
+                                                   style="color:#0B3D2E;">
+                                                    {{ $isPdfA ? 'Open PDF' : 'Open file' }}
+                                                </a>
+                                            @else
+                                                <div class="text-xs text-gray-500 mt-2">File not available.</div>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </div>
