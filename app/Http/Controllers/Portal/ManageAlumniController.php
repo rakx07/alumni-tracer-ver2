@@ -131,7 +131,7 @@ public function edit(Alumnus $alumnus)
     $alumnus->load(['educations','employments','communityInvolvements','engagementPreference','consent']);
 
     // Programs grouped by category (plain array for @json)
-    $programs_by_cat = \App\Models\Program::where('is_active', true)
+    $programs_by_cat = Program::where('is_active', true)
         ->orderBy('name')
         ->get()
         ->groupBy('category')
@@ -147,7 +147,7 @@ public function edit(Alumnus $alumnus)
         ->toArray();
 
     // Strands list (plain array for @json)
-    $strands_list = \App\Models\Strand::where('is_active', true)
+    $strands_list = Strand::where('is_active', true)
         ->orderBy('name')
         ->get()
         ->map(function ($s) {
