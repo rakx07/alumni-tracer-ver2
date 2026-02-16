@@ -123,24 +123,48 @@
         .badge-off{ background:rgba(239,68,68,.08); color:#991b1b; border:1px solid rgba(239,68,68,.20); }
         .badge-dot{ width:8px; height:8px; border-radius:999px; }
 
-        /* Uniform thumbnail */
+        /* ✅ Uniform thumbnail (NOW NDMU DARK GREEN) */
         .thumb{
             width:56px;
             height:56px;
             border-radius: 16px;
-            background: var(--paper);
-            border:1px solid rgba(227,199,122,.65);
+
+            background: var(--ndmu-green);
+            border:1px solid rgba(227,199,122,.90);
+
             overflow:hidden;
             display:flex;
             align-items:center;
             justify-content:center;
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,.5);
+
+            position:relative;
+
+            box-shadow:
+                0 10px 18px rgba(2,6,23,.10),
+                inset 0 0 0 1px rgba(255,255,255,.10);
+        }
+        .thumb::after{
+            content:"";
+            position:absolute;
+            width:18px;
+            height:18px;
+            right:-6px;
+            top:-6px;
+            background: var(--ndmu-gold);
+            opacity:.35;
+            border-radius: 999px;
+            pointer-events:none;
         }
         .thumb img{
             width:100%;
             height:100%;
             object-fit: cover; /* ✅ uniform shape */
+            background: transparent;
         }
+        .thumb span{
+            color: rgba(255,255,255,.92) !important;
+        }
+
         .muted{ color:rgba(15,23,42,.65); font-size:12px; }
         .link{
             color: var(--ndmu-green);
@@ -225,9 +249,10 @@
                             <div class="thumb">
                                 @if($n->logo_url)
                                     <img src="{{ $n->logo_url }}" alt="logo"
-                                         onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;text-[10px] font-extrabold text-gray-600&quot;>NO LOGO</span>';">
+                                         onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;text-[10px] font-extrabold&quot;>NO LOGO</span>';">
+
                                 @else
-                                    <span class="text-[10px] font-extrabold text-gray-600">NO LOGO</span>
+                                    <span class="text-[10px] font-extrabold">NO LOGO</span>
                                 @endif
                             </div>
 
@@ -326,9 +351,10 @@
                                         <div class="thumb">
                                             @if($n->logo_url)
                                                 <img src="{{ $n->logo_url }}" alt="logo"
-                                                     onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;text-[10px] font-extrabold text-gray-600&quot;>NO LOGO</span>';">
+                                                     onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=&quot;text-[10px] font-extrabold&quot;>NO LOGO</span>';">
+
                                             @else
-                                                <span class="text-[10px] font-extrabold text-gray-600">NO LOGO</span>
+                                                <span class="text-[10px] font-extrabold">NO LOGO</span>
                                             @endif
                                         </div>
                                     </td>

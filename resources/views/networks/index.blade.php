@@ -8,13 +8,6 @@
                     Alumni Associations and official networks
                 </p>
             </div>
-
-            <!-- <a href="https://www.ndmu.edu.ph"
-               target="_blank" rel="noopener"
-               class="inline-flex items-center px-4 py-2 rounded-lg font-semibold border shadow-sm"
-               style="border-color:#E3C77A; color:#0B3D2E; background:#FFFBF0;">
-                NDMU Website
-            </a> -->
         </div>
     </x-slot>
 
@@ -88,37 +81,45 @@
             background: var(--ndmu-green);
         }
 
-        /* Network Card */
+        /* ✅ NDMU Green Network Card */
         .network-card{
-            border:1px solid var(--line);
+            border:2px solid var(--ndmu-green);
             border-radius: 18px;
             background:#fff;
             padding: 24px 18px;
             text-align:center;
-            transition: .15s ease;
+            transition: .18s ease;
             box-shadow: 0 10px 24px rgba(2,6,23,.06);
         }
 
         .network-card:hover{
             transform: translateY(-4px);
-            box-shadow: 0 18px 36px rgba(2,6,23,.10);
-            border-color: rgba(227,199,122,.85);
+            box-shadow: 0 18px 36px rgba(2,6,23,.12);
+            border-color: var(--ndmu-gold);
         }
 
         /* Uniform Logo Frame */
-        .logo-frame{
-            width: 120px;
-            height: 120px;
-            border-radius: 24px;
-            background: #fff;
-            border: 1px solid rgba(227,199,122,.75);
-            box-shadow: 0 10px 20px rgba(2,6,23,.08);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            overflow:hidden;
-            margin: 0 auto 16px auto;
-        }
+    .logo-frame{
+    width: 120px;
+    height: 120px;
+    border-radius: 24px;
+    background: #fff;
+    border: 2px solid var(--ndmu-green); /* default green */
+    box-shadow: 0 10px 20px rgba(2,6,23,.08);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    margin: 0 auto 16px auto;
+    transition: .2s ease; /* smooth transition */
+    }
+
+    /* ✅ Change to gold when parent card is hovered */
+    .network-card:hover .logo-frame{
+        border-color: var(--ndmu-gold);
+      box-shadow: 0 14px 28px rgba(227,199,122,.25);
+    }
+
 
         .logo-img{
             max-width: 80%;
