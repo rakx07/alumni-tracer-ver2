@@ -241,7 +241,7 @@
 
                         @if(Route::has('id.user.request.status'))
                             <a href="{{ route('id.user.request.status') }}" class="btn-hero btn-outline">
-                               🆔 Alumni ID Request
+                            🆔 Alumni ID Request
                             </a>
                         @endif
 
@@ -300,6 +300,11 @@
                             </a>
                             <a href="{{ route('itadmin.strands.index') }}" class="btn-hero btn-outline">
                                 🧾 Strands
+                            </a>
+                            <a href="{{ route('itadmin.captcha.edit') }}"
+                            class="inline-flex items-center px-4 py-2 rounded font-semibold"
+                            style="background:rgba(255,255,255,.18); border:1px solid rgba(227,199,122,.35); color:#fff;">
+                                🔐 Captcha Settings
                             </a>
                         @endif
                     </div>
