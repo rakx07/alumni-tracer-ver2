@@ -34,10 +34,11 @@ class AlumniNetwork extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
-
     public function getLogoUrlAttribute(): ?string
     {
         if (!$this->logo_path) return null;
-        return Storage::disk('public')->url($this->logo_path);
+
+        // works with the "public" disk if you have `php artisan storage:link`
+        return Storage::url($this->logo_path);
     }
 }
