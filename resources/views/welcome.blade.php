@@ -731,7 +731,7 @@
                 </div>
 
                 <a href="#careers">Careers</a>
-                <a href="#news">News</a>
+                <a href="{{ route('networks.index') }}">Networks</a>
                 <a href="#about">About</a>
             </div>
 
@@ -1014,7 +1014,7 @@
 </section>
 
 {{-- NEWS --}}
-<section id="news" class="section" style="padding-top:0;">
+<!-- <section id="news" class="section" style="padding-top:0;">
     <div class="container">
         <div class="section-title">
             <h2>News & Features</h2>
@@ -1036,7 +1036,7 @@
             </div>
         </div>
     </div>
-</section>
+</section> -->
 
 {{-- ABOUT --}}
 <section id="about" class="section" style="padding-top:0;">
