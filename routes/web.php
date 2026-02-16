@@ -16,6 +16,8 @@ use App\Http\Controllers\Id\User\AlumniIdRequestController;
 use App\Http\Controllers\Id\Officer\AlumniIdOfficerController;
 use App\Http\Controllers\Portal\CareerPostAdminController;
 use App\Http\Controllers\PublicCareerController;
+use App\Http\Controllers\PublicNetworkController;
+use App\Http\Controllers\Portal\NetworkAdminController;
 
 Route::get('/', fn () => view('welcome'));
 
@@ -27,6 +29,8 @@ Route::get('/events/{event}', [EventController::class, 'showPublic'])->name('eve
 Route::get('/careers', [PublicCareerController::class, 'index'])->name('careers.index');
 Route::get('/careers/{post}', [PublicCareerController::class, 'show'])->name('careers.show');
 
+/* ================= PUBLIC NETWORKS ================= */
+Route::get('/networks', [PublicNetworkController::class, 'index'])->name('networks.index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -196,6 +200,24 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
         Route::post('/assisted/store', [\App\Http\Controllers\Id\Officer\AlumniIdOfficerAssistedController::class, 'store'])->name('assisted.store');
         });
 
+ /*
+|--------------------------------------------------------------------------
+| NETWORKS - Officer / IT Admin Side
+|--------------------------------------------------------------------------
+*/       
+
+    Route::middleware(['auth', 'role:alumni_officer,it_admin'])
+    ->prefix('portal/networks')
+    ->name('portal.networks.manage.')
+    ->group(function () {
+        Route::get('/', [NetworkAdminController::class, 'index'])->name('index');
+        Route::get('/create', [NetworkAdminController::class, 'create'])->name('create');
+        Route::post('/', [NetworkAdminController::class, 'store'])->name('store');
+        Route::get('/{network}/edit', [NetworkAdminController::class, 'edit'])->name('edit');
+        Route::put('/{network}', [NetworkAdminController::class, 'update'])->name('update');
+        Route::delete('/{network}', [NetworkAdminController::class, 'destroy'])->name('destroy');
+        Route::post('/{network}/toggle', [NetworkAdminController::class, 'toggle'])->name('toggle');
+    });
 
 
 require __DIR__.'/auth.php';
