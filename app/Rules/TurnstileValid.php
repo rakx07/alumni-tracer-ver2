@@ -2,9 +2,10 @@
 
 namespace App\Rules;
 
-use App\Support\Settings; // If you have Settings helper/module; safe to remove if you don't use it
+use App\Support\Settings;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
@@ -18,7 +19,6 @@ class TurnstileValid implements ValidationRule
         }
 
         // ✅ 2) Optional DB toggle (captcha_enabled) + IT Admin bypass
-        // If you don't use Settings at all, you can remove this whole block + import.
         if (class_exists(Settings::class)) {
             $enabled = Settings::get('captcha_enabled', '1') === '1';
             if (! $enabled) {
@@ -40,12 +40,13 @@ class TurnstileValid implements ValidationRule
         $secret = config('turnstile.secret_key');
         $url    = config('turnstile.verify_url', 'https://challenges.cloudflare.com/turnstile/v0/siteverify');
 
-        if (!$secret) {
+        if (! $secret) {
             $fail('Captcha is not configured (missing secret key).');
             return;
         }
 
         try {
+            /** @var Response $response */
             $response = Http::asForm()->post($url, [
                 'secret'   => $secret,
                 'response' => $value,
@@ -80,7 +81,7 @@ class TurnstileValid implements ValidationRule
             return false;
         }
 
-        // ✅ Host-based bypass (best for: 192.168.20.105, localhost)
+        // ✅ Host-based bypass
         $host = request()->getHost();
         $localHosts = config('turnstile.local_hosts', []);
 
@@ -88,25 +89,19 @@ class TurnstileValid implements ValidationRule
             return true;
         }
 
-        // ✅ Subnet-based bypass (recommended for LAN like 192.168.20.0/24)
-        // If you didn't define this config, it defaults to only 192.168.20.0/24
+        // ✅ Subnet-based bypass
         $subnets = config('turnstile.local_subnets', ['192.168.20.0/24', '127.0.0.0/8']);
-
         $ip = request()->ip();
 
-        if ($this->ipMatchesAnyCidr($ip, $subnets)) {
-            return true;
-        }
-
-        return false;
+        return $this->ipMatchesAnyCidr($ip, $subnets);
     }
 
     private function ipMatchesAnyCidr(?string $ip, array $cidrs): bool
     {
-        if (!$ip) return false;
+        if (! $ip) return false;
 
-        // IPv4 only for simplicity
-        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        // IPv4 only
+        if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return false;
         }
 
@@ -127,13 +122,13 @@ class TurnstileValid implements ValidationRule
      */
     private function inCidr(string $ip, string $cidr): bool
     {
-        if (!str_contains($cidr, '/')) {
+        if (! str_contains($cidr, '/')) {
             return false;
         }
 
         [$network, $prefix] = explode('/', $cidr, 2);
 
-        if (!filter_var($network, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        if (! filter_var($network, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return false;
         }
 
