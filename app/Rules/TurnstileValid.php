@@ -19,7 +19,7 @@ class TurnstileValid implements ValidationRule
 
         // ✅ 2) Optional DB toggle (captcha_enabled) + IT Admin bypass
         // If you don't use Settings at all, you can remove this whole block + import.
-        if (class_exists(\App\Support\Settings::class)) {
+        if (class_exists(Settings::class)) {
             $enabled = Settings::get('captcha_enabled', '1') === '1';
             if (! $enabled) {
                 return;

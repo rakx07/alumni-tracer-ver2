@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Rules\TurnstileValid;
+use App\Support\Settings;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -17,24 +18,25 @@ class LoginRequest extends FormRequest
         return true;
     }
 
-    /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
-        {
-            return [
-                'email' => ['required', 'string', 'email'],
-                'password' => ['required', 'string'],
-                'cf-turnstile-response' => ['nullable', new \App\Rules\TurnstileValid()],
-            ];
-        }
+    {
+        $localHosts = ['127.0.0.1', 'localhost', '192.168.20.105'];
+        $isLocalHost = in_array($this->getHost(), $localHosts, true);
 
+        $captchaEnabled = Settings::get('captcha_enabled', '1') === '1';
+        $shouldValidateCaptcha = $captchaEnabled && !$isLocalHost;
 
-    /**
-     * Attempt to authenticate the request's credentials.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
+        return [
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+
+            // ✅ only validate when enabled + not local
+            'cf-turnstile-response' => $shouldValidateCaptcha
+                ? ['required', new TurnstileValid()]
+                : ['nullable'],
+        ];
+    }
+
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
@@ -50,11 +52,6 @@ class LoginRequest extends FormRequest
         RateLimiter::clear($this->throttleKey());
     }
 
-    /**
-     * Ensure the login request is not rate limited.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
     public function ensureIsNotRateLimited(): void
     {
         if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {

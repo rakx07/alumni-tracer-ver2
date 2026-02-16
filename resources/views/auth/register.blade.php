@@ -14,11 +14,19 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @php
+        use App\Support\Settings;
+
         $localHosts = ['127.0.0.1', 'localhost', '192.168.20.105'];
         $isLocalHost = in_array(request()->getHost(), $localHosts, true);
+
+        // ✅ DB setting switch (from Captcha Settings)
+        $captchaEnabled = Settings::get('captcha_enabled', '1') === '1';
+
+        // ✅ show captcha only when enabled AND not local host
+        $captchaShouldShow = $captchaEnabled && !$isLocalHost;
     @endphp
 
-    @if(!$isLocalHost)
+    @if($captchaShouldShow)
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @endif
 
@@ -73,7 +81,12 @@
 
                                 <ul class="mt-4 space-y-1 text-sm text-white/90 list-disc pl-5">
                                     <li>Mobile-friendly registration</li>
-                                    <li>Secure access on public host</li>
+                                    <li>
+                                        Security verification:
+                                        <span class="font-semibold">
+                                            {{ $captchaShouldShow ? 'ON (public host)' : 'OFF (local or disabled)' }}
+                                        </span>
+                                    </li>
                                     <li>NDMU alumni engagement platform</li>
                                 </ul>
                             </div>
@@ -104,26 +117,26 @@
                                     <div>
                                         <x-input-label for="first_name" :value="__('First Name')" class="font-semibold text-gray-800" />
                                         <x-text-input id="first_name"
-                                            class="block mt-1 w-full rounded-xl ndmu-ring"
-                                            type="text"
-                                            name="first_name"
-                                            :value="old('first_name')"
-                                            required
-                                            autofocus
-                                            autocomplete="given-name"
-                                            placeholder="First name" />
+                                                      class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                      type="text"
+                                                      name="first_name"
+                                                      :value="old('first_name')"
+                                                      required
+                                                      autofocus
+                                                      autocomplete="given-name"
+                                                      placeholder="First name" />
                                         <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
                                     </div>
 
                                     <div>
                                         <x-input-label for="middle_name" :value="__('Middle Name (Optional)')" class="font-semibold text-gray-800" />
                                         <x-text-input id="middle_name"
-                                            class="block mt-1 w-full rounded-xl ndmu-ring"
-                                            type="text"
-                                            name="middle_name"
-                                            :value="old('middle_name')"
-                                            autocomplete="additional-name"
-                                            placeholder="Middle name" />
+                                                      class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                      type="text"
+                                                      name="middle_name"
+                                                      :value="old('middle_name')"
+                                                      autocomplete="additional-name"
+                                                      placeholder="Middle name" />
                                         <x-input-error :messages="$errors->get('middle_name')" class="mt-2" />
                                     </div>
                                 </div>
@@ -131,26 +144,26 @@
                                 <div>
                                     <x-input-label for="last_name" :value="__('Last Name')" class="font-semibold text-gray-800" />
                                     <x-text-input id="last_name"
-                                        class="block mt-1 w-full rounded-xl ndmu-ring"
-                                        type="text"
-                                        name="last_name"
-                                        :value="old('last_name')"
-                                        required
-                                        autocomplete="family-name"
-                                        placeholder="Last name" />
+                                                  class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                  type="text"
+                                                  name="last_name"
+                                                  :value="old('last_name')"
+                                                  required
+                                                  autocomplete="family-name"
+                                                  placeholder="Last name" />
                                     <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                                 </div>
 
                                 <div>
                                     <x-input-label for="email" :value="__('Email')" class="font-semibold text-gray-800" />
                                     <x-text-input id="email"
-                                        class="block mt-1 w-full rounded-xl ndmu-ring"
-                                        type="email"
-                                        name="email"
-                                        :value="old('email')"
-                                        required
-                                        autocomplete="username"
-                                        placeholder="name@example.com" />
+                                                  class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                  type="email"
+                                                  name="email"
+                                                  :value="old('email')"
+                                                  required
+                                                  autocomplete="username"
+                                                  placeholder="name@example.com" />
                                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
                                 </div>
 
@@ -158,29 +171,30 @@
                                     <div>
                                         <x-input-label for="password" :value="__('Password')" class="font-semibold text-gray-800" />
                                         <x-text-input id="password"
-                                            class="block mt-1 w-full rounded-xl ndmu-ring"
-                                            type="password"
-                                            name="password"
-                                            required
-                                            autocomplete="new-password"
-                                            placeholder="Password" />
+                                                      class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                      type="password"
+                                                      name="password"
+                                                      required
+                                                      autocomplete="new-password"
+                                                      placeholder="Password" />
                                         <x-input-error :messages="$errors->get('password')" class="mt-2" />
                                     </div>
 
                                     <div>
                                         <x-input-label for="password_confirmation" :value="__('Confirm Password')" class="font-semibold text-gray-800" />
                                         <x-text-input id="password_confirmation"
-                                            class="block mt-1 w-full rounded-xl ndmu-ring"
-                                            type="password"
-                                            name="password_confirmation"
-                                            required
-                                            autocomplete="new-password"
-                                            placeholder="Confirm password" />
+                                                      class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                      type="password"
+                                                      name="password_confirmation"
+                                                      required
+                                                      autocomplete="new-password"
+                                                      placeholder="Confirm password" />
                                         <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                                     </div>
                                 </div>
 
-                                @if(!$isLocalHost)
+                                {{-- Captcha --}}
+                                @if($captchaShouldShow)
                                     <div class="pt-1">
                                         <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
                                             <div class="text-xs font-semibold text-gray-700 mb-2">
