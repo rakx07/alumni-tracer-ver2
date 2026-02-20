@@ -33,8 +33,12 @@ Route::get('/careers/{post}', [PublicCareerController::class, 'show'])->name('ca
 Route::get('/networks', [PublicNetworkController::class, 'index'])->name('networks.index');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    
+    //To check if intake already finished
+   Route::get('/dashboard', [PortalDashboardController::class, 'index'])
+    ->middleware('intake.completed')
+    ->name('dashboard');
 
-    Route::get('/dashboard', [PortalDashboardController::class, 'index'])->name('dashboard');
 
     // Profile management
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -174,7 +178,7 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
 | Alumni ID - User Side
 |--------------------------------------------------------------------------
 */
-    Route::middleware(['auth'])
+        Route::middleware(['auth', 'verified', 'intake.completed'])
         ->prefix('id/user/request')
         ->name('id.user.request.')
         ->group(function () {
@@ -182,6 +186,7 @@ Route::middleware(['auth', 'role:alumni_officer,it_admin'])
             Route::get('/create', [AlumniIdRequestController::class, 'create'])->name('create');
             Route::post('/', [AlumniIdRequestController::class, 'store'])->name('store');
         });
+
 
 /*
 |--------------------------------------------------------------------------

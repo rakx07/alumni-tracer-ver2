@@ -5,14 +5,25 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 Alumni Intake Form
             </h2>
-            <a href="{{ route('dashboard') }}" class="px-4 py-2 bg-gray-800 text-white rounded">
-                Back to Dashboard
-            </a>
+
+            {{-- Hide Back to Dashboard if intake not completed --}}
+            @if(auth()->user()?->intake_completed_at)
+                <a href="{{ route('dashboard') }}" class="px-4 py-2 bg-gray-800 text-white rounded">
+                    Back to Dashboard
+                </a>
+            @endif
         </div>
     </x-slot>
 
     <div class="py-8">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
+
+            <!-- Added here for warning -->
+            @if(session('warning'))
+                <div class="p-3 mb-4 bg-yellow-100 border border-yellow-300 rounded text-yellow-900">
+                    {{ session('warning') }}
+                </div>
+            @endif
 
             @if ($errors->any())
                 <div class="p-4 mb-4 bg-red-100 border border-red-300 rounded">
@@ -35,8 +46,7 @@
                 @csrf
 
                 {{-- THIS LOADS YOUR PARTIAL --}}
-                 @include('user._intake_form', ['alumnus' => $alumnus])
-
+                @include('user._intake_form', ['alumnus' => $alumnus])
 
                 <div class="mt-6">
                     <button class="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
@@ -328,7 +338,6 @@
                 gradSel.value = "";
             }
 
-
             populatePrograms(programSel, levelSel.value);
 
             if (data.program_id) {
@@ -365,18 +374,13 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                    <div>
-                        <label class="block font-medium">Current Status</label>
-                        <input name="employments[${i}][current_status]" class="w-full border rounded p-2" value="${data.current_status ?? ''}">
-                    </div>
-                    <div>
-                        <label class="block font-medium">Occupation/Position</label>
-                        <input name="employments[${i}][occupation_position]" class="w-full border rounded p-2" value="${data.occupation_position ?? ''}">
-                    </div>
+
                     <div>
                         <label class="block font-medium">Company/Organization</label>
-                        <input name="employments[${i}][company_name]" class="w-full border rounded p-2" value="${data.company_name ?? ''}">
+                        <input name="employments[${i}][company_name]" class="w-full border rounded p-2"
+                            value="${data.company_name ?? ''}">
                     </div>
+
                     <div>
                         <label class="block font-medium">Type of Organization</label>
                         <select name="employments[${i}][org_type]" class="w-full border rounded p-2">
@@ -388,26 +392,46 @@
                             <option value="other">Other</option>
                         </select>
                     </div>
+
+                    <div>
+                        <label class="block font-medium">Occupation/Position</label>
+                        <input name="employments[${i}][occupation_position]" class="w-full border rounded p-2"
+                            value="${data.occupation_position ?? ''}">
+                    </div>
+
+                    <div>
+                        <label class="block font-medium">Current Status</label>
+                        <input name="employments[${i}][current_status]" class="w-full border rounded p-2"
+                            value="${data.current_status ?? ''}">
+                    </div>
+
+                    <div>
+                        <label class="block font-medium">Years of Service / Start</label>
+                        <input name="employments[${i}][years_of_service_or_start]" class="w-full border rounded p-2"
+                            value="${data.years_of_service_or_start ?? ''}">
+                    </div>
+
                     <div class="md:col-span-2">
                         <label class="block font-medium">Work Address</label>
                         <textarea name="employments[${i}][work_address]" class="w-full border rounded p-2" rows="2">${data.work_address ?? ''}</textarea>
                     </div>
-                    <div>
+
+                    <div class="md:col-span-2">
                         <label class="block font-medium">Contact Info</label>
-                        <input name="employments[${i}][contact_info]" class="w-full border rounded p-2" value="${data.contact_info ?? ''}">
+                        <input name="employments[${i}][contact_info]" class="w-full border rounded p-2"
+                            value="${data.contact_info ?? ''}">
                     </div>
-                    <div>
-                        <label class="block font-medium">Years of Service / Start</label>
-                        <input name="employments[${i}][years_of_service_or_start]" class="w-full border rounded p-2" value="${data.years_of_service_or_start ?? ''}">
-                    </div>
+
                     <div class="md:col-span-2">
                         <label class="block font-medium">Licenses/Certifications</label>
                         <textarea name="employments[${i}][licenses_certifications]" class="w-full border rounded p-2" rows="2">${data.licenses_certifications ?? ''}</textarea>
                     </div>
+
                     <div class="md:col-span-2">
                         <label class="block font-medium">Achievements/Awards</label>
                         <textarea name="employments[${i}][achievements_awards]" class="w-full border rounded p-2" rows="2">${data.achievements_awards ?? ''}</textarea>
                     </div>
+
                 </div>
             `;
 
@@ -486,6 +510,78 @@
             communityWrap.appendChild(communityCard(i, {}));
         });
 
+        // ========= FLASH MODAL (Success/Warning) =========
+        (function () {
+            const modal = document.getElementById('flashModal');
+            const backdrop = document.getElementById('flashBackdrop');
+            const closeBtn = document.getElementById('flashClose');
+            const okBtn = document.getElementById('flashOk');
+            const titleEl = document.getElementById('flashTitle');
+            const msgEl = document.getElementById('flashMessage');
+
+            if (!modal || !backdrop || !closeBtn || !okBtn || !titleEl || !msgEl) return;
+
+            const successMsg = @json(session('success'));
+            const warningMsg = @json(session('warning'));
+
+            const message = successMsg || warningMsg;
+            if (!message) return;
+
+            titleEl.textContent = successMsg ? 'Success' : 'Notice';
+            msgEl.textContent = message;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.setAttribute('aria-hidden', 'false');
+
+            function close() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+
+            backdrop.addEventListener('click', close);
+            closeBtn.addEventListener('click', close);
+            okBtn.addEventListener('click', close);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') close();
+            });
+        })();
+
     });
     </script>
+
+    {{-- ✅ Success/Warning Modal --}}
+    <div id="flashModal"
+         class="fixed inset-0 z-50 hidden items-center justify-center"
+         aria-hidden="true">
+        {{-- Backdrop --}}
+        <div id="flashBackdrop" class="absolute inset-0 bg-black/50"></div>
+
+        {{-- Modal --}}
+        <div class="relative w-full max-w-md mx-4 rounded-lg bg-white shadow-lg border">
+            <div class="flex items-start justify-between px-5 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900" id="flashTitle">Notice</h3>
+                <button type="button" id="flashClose"
+                        class="text-gray-500 hover:text-gray-800 text-2xl leading-none">
+                    &times;
+                </button>
+            </div>
+
+            <div class="px-5 py-4">
+                <div id="flashMessage" class="text-sm text-gray-700">
+                    {{-- message injected by JS --}}
+                </div>
+            </div>
+
+            <div class="px-5 py-4 border-t flex justify-end gap-2">
+                <button type="button" id="flashOk"
+                        class="px-4 py-2 rounded bg-gray-800 text-white hover:bg-gray-900">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
 </x-app-layout>

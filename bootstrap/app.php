@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'careers.manage' => \App\Http\Middleware\EnsureCareerManager::class,
+            'intake.completed' => \App\Http\Middleware\EnsureIntakeCompleted::class,
         ]);
 
         $middleware->web(append: [

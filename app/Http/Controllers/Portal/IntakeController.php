@@ -14,87 +14,46 @@ class IntakeController extends Controller
 {
     public function __construct()
     {
-        // ✅ Allow regular users to access intake (and optionally allow admins too)
         $this->middleware(function ($request, $next) {
             $role = Auth::user()?->role ?? 'user';
-
-            // Allow these roles to use intake
             $allowedRoles = ['user', 'admin', 'it_admin', 'alumni_officer'];
-
             abort_unless(in_array($role, $allowedRoles, true), 403);
-
             return $next($request);
         });
     }
 
-// public function form()
-// {
-//     $alumnus = Alumnus::with([
-//         'educations','employments','communityInvolvements','engagementPreference','consent'
-//     ])->where('user_id', Auth::id())->first();
+    public function form()
+    {
+        $alumnus = Alumnus::with([
+            'educations','employments','communityInvolvements','engagementPreference','consent'
+        ])->where('user_id', Auth::id())->first();
 
-//     $user = Auth::user();
+        $user = Auth::user();
 
-//     $programs_by_cat = Program::where('is_active', true)
-//         ->orderBy('name')
-//         ->get()
-//         ->groupBy('category')
-//         ->map(fn($items) => $items->map(fn($p) => [
-//             'id' => $p->id,
-//             'code' => $p->code,
-//             'name' => $p->name,
-//         ]))
-//         ->toArray(); // make it plain array for clean JSON
+        $programs_by_cat = Program::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->groupBy('category')
+            ->map(fn($items) => $items->map(fn($p) => [
+                'id' => $p->id,
+                'code' => $p->code,
+                'name' => $p->name,
+            ]))
+            ->toArray();
 
-//     $strands_list = Strand::where('is_active', true)
-//         ->orderBy('name')
-//         ->get()
-//         ->map(fn($s) => [
-//             'id' => $s->id,
-//             'code' => $s->code,
-//             'name' => $s->name,
-//         ])
-//         ->toArray();
+        $strands_list = Strand::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn($s) => [
+                'id' => $s->id,
+                'code' => $s->code,
+                'name' => $s->name,
+            ])
+            ->toArray();
 
-//     return view('user.intake', compact('alumnus', 'user', 'programs_by_cat', 'strands_list'));
-// }
-public function form()
-{
-    $alumnus = Alumnus::with([
-        'educations','employments','communityInvolvements','engagementPreference','consent'
-    ])->where('user_id', Auth::id())->first();
+        return view('user.intake', compact('alumnus', 'user', 'programs_by_cat', 'strands_list'));
+    }
 
-    $user = Auth::user();
-
-    $programs_by_cat = Program::where('is_active', true)
-        ->orderBy('name')
-        ->get()
-        ->groupBy('category')
-        ->map(fn($items) => $items->map(fn($p) => [
-            'id' => $p->id,
-            'code' => $p->code,
-            'name' => $p->name,
-        ]))
-        ->toArray(); // make it plain array for clean JSON
-
-    $strands_list = Strand::where('is_active', true)
-        ->orderBy('name')
-        ->get()
-        ->map(fn($s) => [
-            'id' => $s->id,
-            'code' => $s->code,
-            'name' => $s->name,
-        ])
-        ->toArray();
-
-    return view('user.intake', compact('alumnus', 'user', 'programs_by_cat', 'strands_list'));
-}
-
-
-    /**
-     * Build full name from user name parts:
-     * "Last, First Middle Suffix"
-     */
     private function buildFullNameFromUser($user): string
     {
         $last   = trim((string) ($user->last_name ?? ''));
@@ -113,7 +72,6 @@ public function form()
             $base = trim($base . ' ' . $suffix);
         }
 
-        // fallback (if name parts are not yet added to users table)
         if ($base === '') {
             $base = trim((string) ($user->name ?? ''));
         }
@@ -124,21 +82,22 @@ public function form()
     public function save(Request $request)
     {
         $request->validate([
-            // ✅ removed full_name requirement
-            'email' => ['nullable', 'email', 'max:255'],
-            'educations' => ['nullable', 'array'],
-            'educations.*.level' => ['required_with:educations', 'string'],
+            'first_name'  => ['required','string','max:100'],
+            'middle_name' => ['nullable','string','max:100'],
+            'last_name'   => ['required','string','max:100'],
+            'suffix'      => ['nullable','string','max:30'],
+
+            'email' => ['nullable','email','max:255'],
+            'educations' => ['nullable','array'],
+            'educations.*.level' => ['required_with:educations','string'],
         ]);
-        
-        //Intake validation for educations
+
         $educations = $request->input('educations', []);
 
         foreach ($educations as $idx => $row) {
 
             $level = $row['level'] ?? null;
             $didGraduate = $row['did_graduate'] ?? null;
-
-            /* ================= Graduate logic ================= */
 
             if ($didGraduate === '1' || $didGraduate === 1) {
                 if (empty($row['year_graduated'])) {
@@ -158,8 +117,6 @@ public function form()
                 }
             }
 
-            /* ================= Program "Others" ================= */
-
             if (in_array($level, ['ndmu_college','ndmu_grad_school','ndmu_law'], true)) {
                 if (($row['program_id'] ?? null) === '__other__') {
                     if (empty(trim((string)($row['specific_program'] ?? '')))) {
@@ -172,14 +129,32 @@ public function form()
             }
         }
 
-
         DB::transaction(function () use ($request) {
 
             $user = Auth::user();
 
+            // ✅ SAVE NAME PARTS PROPERLY
+            $user->forceFill([
+                'first_name'  => $request->input('first_name'),
+                'middle_name' => $request->input('middle_name'),
+                'last_name'   => $request->input('last_name'),
+                'suffix'      => $request->input('suffix'),
+            ]);
+
+            // Keep legacy name column in sync
+            $user->forceFill([
+                'name' => trim(collect([
+                    $request->input('first_name'),
+                    $request->input('middle_name'),
+                    $request->input('last_name'),
+                    $request->input('suffix'),
+                ])->filter()->implode(' ')),
+            ]);
+
+            $user->save();
+
             $alumnus = Alumnus::where('user_id', $user->id)->first();
 
-            // ✅ IMPORTANT: removed 'full_name' from request->only()
             $data = $request->only([
                 'nickname','sex','birthdate','age','civil_status',
                 'home_address','current_address','contact_number','email','facebook',
@@ -187,19 +162,11 @@ public function form()
             ]);
 
             $data['user_id'] = $user->id;
-
-            // ✅ If alumni.full_name is NOT NULL in DB, always provide a value
             $data['full_name'] = $this->buildFullNameFromUser($user);
-
-            // Force self-service identity + validation
             $data['encoding_mode'] = 'self_service';
-            $data['encoded_by']    = $user->id;
-
-            // Rule A: self-service auto-validated
-            $data['validated_by']  = $user->id;
-            $data['validated_at']  = now();
-
-            // Optional but recommended: mark record as validated (adjust if you use other statuses)
+            $data['encoded_by'] = $user->id;
+            $data['validated_by'] = $user->id;
+            $data['validated_at'] = now();
             $data['record_status'] = 'validated';
 
             if (!$alumnus) {
@@ -208,86 +175,51 @@ public function form()
                 $alumnus->update($data);
             }
 
-
-            // Replace child rows
             $alumnus->educations()->delete();
             $alumnus->employments()->delete();
             $alumnus->communityInvolvements()->delete();
 
-            // Educations
             foreach ($request->input('educations', []) as $row) {
                 if (empty($row['level'])) continue;
 
-               $alumnus->educations()->create([
-                'level' => $row['level'],
-
-                // ✅ MUST SAVE so edit can load
-                'did_graduate' => $row['did_graduate'] ?? null,
-                'program_id'   => (($row['program_id'] ?? null) === '__other__') ? null : ($row['program_id'] ?? null),
-                'strand_id'    => $row['strand_id'] ?? null,
-
-                'student_number'     => $row['student_number'] ?? null,
-                'year_entered'       => $row['year_entered'] ?? null,
-                'year_graduated'     => $row['year_graduated'] ?? null,
-                'last_year_attended' => $row['last_year_attended'] ?? null,
-
-                'degree_program' => $row['degree_program'] ?? null,
-
-                // store typed program if Others
-                'specific_program' => (($row['program_id'] ?? null) === '__other__')
-                    ? (trim((string)($row['specific_program'] ?? '')) ?: null)
-                    : (trim((string)($row['specific_program'] ?? '')) ?: null),
-
-                'research_title' => $row['research_title'] ?? null,
-                'thesis_title'   => $row['thesis_title'] ?? null,
-
-                'strand_track' => $row['strand_track'] ?? null,
-
-                'honors_awards'              => $row['honors_awards'] ?? null,
-                'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
-                'clubs_organizations'        => $row['clubs_organizations'] ?? null,
-
-                'institution_name'    => $row['institution_name'] ?? null,
-                'institution_address' => $row['institution_address'] ?? null,
-                'course_degree'       => $row['course_degree'] ?? null,
-                'year_completed'      => $row['year_completed'] ?? null,
-                'scholarship_award'   => $row['scholarship_award'] ?? null,
-                'notes'               => $row['notes'] ?? null,
-            ]);
-
-
+                $alumnus->educations()->create([
+                    'level' => $row['level'],
+                    'did_graduate' => $row['did_graduate'] ?? null,
+                    'program_id' => (($row['program_id'] ?? null) === '__other__') ? null : ($row['program_id'] ?? null),
+                    'strand_id' => $row['strand_id'] ?? null,
+                    'student_number' => $row['student_number'] ?? null,
+                    'year_entered' => $row['year_entered'] ?? null,
+                    'year_graduated' => $row['year_graduated'] ?? null,
+                    'last_year_attended' => $row['last_year_attended'] ?? null,
+                    'degree_program' => $row['degree_program'] ?? null,
+                    'specific_program' => trim((string)($row['specific_program'] ?? '')) ?: null,
+                    'research_title' => $row['research_title'] ?? null,
+                    'thesis_title' => $row['thesis_title'] ?? null,
+                    'strand_track' => $row['strand_track'] ?? null,
+                    'honors_awards' => $row['honors_awards'] ?? null,
+                    'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
+                    'clubs_organizations' => $row['clubs_organizations'] ?? null,
+                    'institution_name' => $row['institution_name'] ?? null,
+                    'institution_address' => $row['institution_address'] ?? null,
+                    'course_degree' => $row['course_degree'] ?? null,
+                    'year_completed' => $row['year_completed'] ?? null,
+                    'scholarship_award' => $row['scholarship_award'] ?? null,
+                    'notes' => $row['notes'] ?? null,
+                ]);
             }
 
-            // Employments
             foreach ($request->input('employments', []) as $row) {
                 $hasAny = collect($row)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
                 if (!$hasAny) continue;
 
-                $alumnus->employments()->create([
-                    'current_status' => $row['current_status'] ?? null,
-                    'occupation_position' => $row['occupation_position'] ?? null,
-                    'company_name' => $row['company_name'] ?? null,
-                    'org_type' => $row['org_type'] ?? null,
-                    'work_address' => $row['work_address'] ?? null,
-                    'contact_info' => $row['contact_info'] ?? null,
-                    'years_of_service_or_start' => $row['years_of_service_or_start'] ?? null,
-                    'licenses_certifications' => $row['licenses_certifications'] ?? null,
-                    'achievements_awards' => $row['achievements_awards'] ?? null,
-                ]);
+                $alumnus->employments()->create($row);
             }
 
-            // Community
             foreach ($request->input('community', []) as $row) {
                 if (empty($row['organization'])) continue;
-
-                $alumnus->communityInvolvements()->create([
-                    'organization' => $row['organization'] ?? null,
-                    'role_position' => $row['role_position'] ?? null,
-                    'years_involved' => $row['years_involved'] ?? null,
-                ]);
+                $alumnus->communityInvolvements()->create($row);
             }
 
-            // Engagement (single row)
             $pref = $request->input('engagement', []);
             $alumnus->engagementPreference()->updateOrCreate(
                 ['alumnus_id' => $alumnus->id],
@@ -303,7 +235,6 @@ public function form()
                 ]
             );
 
-            // Consent (single row)
             $consent = $request->input('consent', []);
             $alumnus->consent()->updateOrCreate(
                 ['alumnus_id' => $alumnus->id],
@@ -315,6 +246,43 @@ public function form()
             );
         });
 
-        return redirect()->route('intake.form')->with('success', 'Intake record saved successfully.');
+        $user = Auth::user();
+        $alumnus = Alumnus::where('user_id', $user->id)->first();
+
+        if ($alumnus && $this->intakeIsComplete($alumnus)) {
+            if (empty($user->intake_completed_at)) {
+                $user->forceFill(['intake_completed_at' => now()])->save();
+            }
+
+            return redirect()->route('intake.form')
+                ->with('success', 'Intake completed successfully! You may now proceed to the Dashboard.');
+        }
+
+        $user->forceFill(['intake_completed_at' => null])->save();
+
+        return redirect()->route('intake.form')
+            ->with('warning', 'Saved, but intake is not yet complete. Please fill all required fields.');
+    }
+
+    private function intakeIsComplete(Alumnus $alumnus): bool
+    {
+        if (empty(trim((string) $alumnus->full_name))) return false;
+        if (empty((string) $alumnus->sex)) return false;
+        if (empty((string) $alumnus->birthdate)) return false;
+        if (empty(trim((string) $alumnus->nationality))) return false;
+        if (empty(trim((string) $alumnus->home_address))) return false;
+        if (empty(trim((string) $alumnus->current_address))) return false;
+
+        $hasNdmuEducation = $alumnus->educations()
+            ->where('level', '!=', 'post_ndmu')
+            ->exists();
+
+        if (!$hasNdmuEducation) return false;
+
+        $consent = $alumnus->consent()->first();
+        if (!$consent) return false;
+        if (empty(trim((string) $consent->signature_name))) return false;
+
+        return true;
     }
 }

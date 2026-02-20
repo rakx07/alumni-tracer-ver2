@@ -9,8 +9,6 @@
      */
 
     $alumnus = $alumnus ?? null;
-
-    // NEW: allow caller to disable pulling defaults from the logged-in user
     $prefill_from_auth = $prefill_from_auth ?? true;
 
     $sex = old('sex', $alumnus->sex ?? '');
@@ -21,24 +19,16 @@
 
     $u = $prefill_from_auth ? auth()->user() : null;
 
-    // Default full name from logged-in user ONLY if enabled
     $defaultFullName = $prefill_from_auth
-        ? trim(collect([
-            $u?->first_name,
-            $u?->middle_name,
-            $u?->last_name,
-        ])->filter()->implode(' '))
+        ? trim(collect([$u?->first_name, $u?->middle_name, $u?->last_name, $u?->suffix])->filter()->implode(' '))
         : '';
 
-    // Alumni table uses full_name; when assisted, we prefer alumnus->full_name only (no auth fallback)
     $fullNameValue = old('full_name', $alumnus->full_name ?? $defaultFullName);
 
-    // Name fields:
-    // - Assisted mode: use alumnus split if needed (NOT auth user)
-    // - Self-service: use auth user first
     $first  = old('first_name',  $prefill_from_auth ? ($u?->first_name ?? '') : '');
     $middle = old('middle_name', $prefill_from_auth ? ($u?->middle_name ?? '') : '');
     $last   = old('last_name',   $prefill_from_auth ? ($u?->last_name ?? '') : '');
+    $suffix = old('suffix',      $prefill_from_auth ? ($u?->suffix ?? '') : '');
 
     if ((!$first && !$last) && $fullNameValue) {
         $parts = preg_split('/\s+/', trim($fullNameValue));
@@ -47,7 +37,6 @@
         $middle = count($parts) > 2 ? implode(' ', array_slice($parts, 1, -1)) : '';
     }
 @endphp
-
 
 <div class="bg-white shadow rounded p-6 space-y-8">
 
@@ -64,7 +53,8 @@
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium mb-1">Name</label>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {{-- ✅ 4 fields now (First, Middle, Last, Suffix) --}}
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
                     <div>
                         <label class="block text-xs text-gray-600 mb-1">First Name <span class="text-red-600">*</span></label>
                         <input id="first_name" name="first_name"
@@ -89,6 +79,15 @@
                                value="{{ $last }}"
                                autocomplete="family-name"
                                required>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Suffix (optional)</label>
+                        <input id="suffix" name="suffix"
+                               class="w-full border rounded p-2"
+                               value="{{ $suffix }}"
+                               placeholder="Jr., Sr., III"
+                               autocomplete="honorific-suffix">
                     </div>
                 </div>
 
@@ -121,27 +120,24 @@
 
             <div>
                 <label class="block text-sm font-medium">Birthdate</label>
-                        @php
-                $birthVal = old('birthdate');
+                @php
+                    $birthVal = old('birthdate');
 
-                if ($birthVal === null) {
-                    // $alumnus->birthdate may be Carbon (casted) or string
-                    $birthVal = $alumnus?->birthdate
-                        ? \Illuminate\Support\Carbon::parse($alumnus->birthdate)->format('Y-m-d')
-                        : '';
-                } else {
-                    // old() could include time, normalize too
-                    try {
-                        $birthVal = \Illuminate\Support\Carbon::parse($birthVal)->format('Y-m-d');
-                    } catch (\Throwable $e) {
-                        $birthVal = '';
+                    if ($birthVal === null) {
+                        $birthVal = $alumnus?->birthdate
+                            ? \Illuminate\Support\Carbon::parse($alumnus->birthdate)->format('Y-m-d')
+                            : '';
+                    } else {
+                        try {
+                            $birthVal = \Illuminate\Support\Carbon::parse($birthVal)->format('Y-m-d');
+                        } catch (\Throwable $e) {
+                            $birthVal = '';
+                        }
                     }
-                }
-            @endphp
+                @endphp
 
-            <input type="date" name="birthdate" class="w-full border rounded p-2"
-                value="{{ $birthVal }}">
-
+                <input type="date" name="birthdate" class="w-full border rounded p-2"
+                       value="{{ $birthVal }}">
             </div>
 
             <div>
@@ -174,9 +170,7 @@
             <div>
                 <label class="block text-sm font-medium">Email</label>
                 <input name="email" class="w-full border rounded p-2"
-                   value="{{ old('email', $alumnus->email ?? ($prefill_from_auth ? (auth()->user()->email ?? '') : '')) }}">
-
-
+                       value="{{ old('email', $alumnus->email ?? ($prefill_from_auth ? (auth()->user()->email ?? '') : '')) }}">
             </div>
 
             <div>
@@ -326,12 +320,14 @@
 
 </div>
 
-{{-- Keep full_name in sync with the 3 name fields --}}
+{{-- Keep full_name in sync with the name fields --}}
 <script>
 (function () {
     const first = document.getElementById('first_name');
     const middle = document.getElementById('middle_name');
     const last = document.getElementById('last_name');
+    const suffix = document.getElementById('suffix');
+
     const full = document.getElementById('full_name');
     const preview = document.getElementById('full_name_preview');
 
@@ -341,7 +337,8 @@
         const parts = [
             (first.value || '').trim(),
             (middle?.value || '').trim(),
-            (last.value || '').trim()
+            (last.value || '').trim(),
+            (suffix?.value || '').trim(),
         ].filter(Boolean);
 
         const v = parts.join(' ');
@@ -349,7 +346,7 @@
         preview.textContent = v || '—';
     }
 
-    [first, middle, last].forEach(el => el && el.addEventListener('input', build));
+    [first, middle, last, suffix].forEach(el => el && el.addEventListener('input', build));
     build();
 })();
 </script>
