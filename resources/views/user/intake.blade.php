@@ -119,6 +119,69 @@
         }
         syncAgeFromBirthdate();
 
+        // ==============================
+        // CAPSLOCK / AUTO-UPPERCASE (SAFE)
+        // ==============================
+        function shouldUppercase(el) {
+            if (!el) return false;
+
+            // allow opt-out per field: add data-no-caps="1"
+            if (el.dataset && el.dataset.noCaps === '1') return false;
+
+            // exclude by name/type
+            if (el.name === 'email') return false;
+            if (el.type === 'date' || el.type === 'number' || el.type === 'checkbox' || el.type === 'radio' || el.type === 'file' || el.type === 'password') return false;
+
+            // only text-ish inputs + textarea
+            const tag = (el.tagName || '').toLowerCase();
+            if (tag === 'textarea') return true;
+            if (tag === 'input') {
+                const t = (el.getAttribute('type') || 'text').toLowerCase();
+                return (t === 'text' || t === '' || t === 'search' || t === 'tel');
+            }
+            return false;
+        }
+
+        function forceUppercase(el) {
+            if (!shouldUppercase(el)) return;
+
+            // visual
+            el.style.textTransform = 'uppercase';
+
+            // already bound?
+            if (el.dataset && el.dataset.capsBound === '1') return;
+            if (el.dataset) el.dataset.capsBound = '1';
+
+            const handler = () => {
+                const start = el.selectionStart;
+                const end   = el.selectionEnd;
+
+                const upper = (el.value || '').toUpperCase();
+                if (el.value !== upper) {
+                    el.value = upper;
+                    // keep caret best-effort
+                    if (typeof start === 'number' && typeof end === 'number') {
+                        try { el.setSelectionRange(start, end); } catch (e) {}
+                    }
+                }
+            };
+
+            el.addEventListener('input', handler);
+            el.addEventListener('blur', handler);
+            el.addEventListener('change', handler);
+
+            // initial apply (for values loaded from DB)
+            handler();
+        }
+
+        function applyUppercaseToContainer(root) {
+            if (!root || !root.querySelectorAll) return;
+            root.querySelectorAll('input, textarea').forEach(forceUppercase);
+        }
+
+        // apply to existing page fields (including _intake_form content)
+        applyUppercaseToContainer(document);
+
         // ========= VISIBILITY RULES =========
         const EDU_RULES = {
             ndmu_elementary: ['did_graduate','year_entered','year_graduated','last_year_attended'],
@@ -193,7 +256,7 @@
 
         function applyProgramOthersLogic(cardEl) {
             const programSel = cardEl.querySelector('select[data-program]');
-            const otherWrap  = cardEl.querySelector('[data-field="specific_program"]');
+            const otherWrap  = cardEl.querySelector('[data-field="specific_program]');
             if (!programSel || !otherWrap) return;
 
             const showOther = programSel.value === '__other__';
@@ -209,7 +272,7 @@
             const level = levelSel ? levelSel.value : '';
             setVisibility(cardEl, EDU_RULES[level] || []);
             applyGraduateLogic(cardEl);
-            applyProgramOthersLogic(cardEl);
+            // (others logic for program) - handled below
         }
 
         // ========= EDUCATION CARD =========
@@ -348,18 +411,41 @@
                 programSel.value = '';
             }
 
-            applyEducationVisibility(div);
+            // Apply visibility and others logic
+            setVisibility(div, EDU_RULES[levelSel.value] || []);
+            applyGraduateLogic(div);
+
+            // show others input
+            const otherWrap = div.querySelector('[data-field="specific_program"]');
+            if (otherWrap) {
+                otherWrap.style.display = (programSel.value === '__other__') ? '' : 'none';
+            }
 
             levelSel.addEventListener('change', () => {
                 populatePrograms(programSel, levelSel.value);
                 programSel.value = '';
-                applyEducationVisibility(div);
+                setVisibility(div, EDU_RULES[levelSel.value] || []);
+                applyGraduateLogic(div);
+
+                if (otherWrap) otherWrap.style.display = 'none';
             });
 
-            gradSel.addEventListener('change', () => applyEducationVisibility(div));
-            programSel.addEventListener('change', () => applyEducationVisibility(div));
+            gradSel.addEventListener('change', () => applyGraduateLogic(div));
+
+            programSel.addEventListener('change', () => {
+                if (!otherWrap) return;
+                const showOther = programSel.value === '__other__';
+                otherWrap.style.display = showOther ? '' : 'none';
+                if (!showOther) {
+                    otherWrap.querySelectorAll('input, textarea').forEach(el => el.value = '');
+                }
+            });
 
             div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
+
+            // ✅ Apply uppercase to dynamically created card fields
+            applyUppercaseToContainer(div);
+
             return div;
         }
 
@@ -367,6 +453,7 @@
         function employmentCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";
+
             div.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
                     <div class="font-semibold">Employment</div>
@@ -436,9 +523,13 @@
             `;
 
             const sel = div.querySelector(`select[name="employments[${i}][org_type]"]`);
-            sel.value = data.org_type ?? '';
+            if (sel) sel.value = data.org_type ?? '';
 
             div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
+
+            // ✅ Apply uppercase to dynamically created card fields
+            applyUppercaseToContainer(div);
+
             return div;
         }
 
@@ -446,6 +537,7 @@
         function communityCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";
+
             div.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
                     <div class="font-semibold">Organization / Association</div>
@@ -469,6 +561,10 @@
             `;
 
             div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
+
+            // ✅ Apply uppercase to dynamically created card fields
+            applyUppercaseToContainer(div);
+
             return div;
         }
 

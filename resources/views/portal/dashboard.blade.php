@@ -288,6 +288,13 @@
                                     🤝 Assisted Alumni ID Request
                                 </a>
                             @endif
+
+                            {{-- ✅ ADDED: Assisted Alumni Record Creation (PWD/Senior) --}}
+                            @if(in_array($role, ['alumni_officer','it_admin','admin'], true) && Route::has('portal.alumni_encoding.create'))
+                                <a href="{{ route('portal.alumni_encoding.create') }}" class="btn-hero btn-outline">
+                                    🧾 Assisted Alumni Record Creation
+                                </a>
+                            @endif
                         @endif
 
                         {{-- IT Admin tools --}}
@@ -429,6 +436,14 @@
                                         <a href="{{ route('id.officer.requests.assisted.create') }}">
                                             <div class="action-title">Assisted ID Request</div>
                                             <div class="action-sub">Create a request on behalf of PWD/Senior alumni.</div>
+                                        </a>
+                                    @endif
+
+                                    {{-- ✅ ADDED: Assisted Alumni Record Creation (PWD/Senior) --}}
+                                    @if(in_array($role, ['alumni_officer','it_admin','admin'], true) && Route::has('portal.alumni_encoding.create'))
+                                        <a href="{{ route('portal.alumni_encoding.create') }}">
+                                            <div class="action-title">Assisted Alumni Record Creation</div>
+                                            <div class="action-sub">Create a record on behalf of PWD/Senior alumni and link to email.</div>
                                         </a>
                                     @endif
                                 </div>

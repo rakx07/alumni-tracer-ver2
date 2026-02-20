@@ -193,8 +193,8 @@
         </div>
     </section>
 
-    {{-- II. ADDRESSES --}}
-    <section id="addresses" class="scroll-mt-24">
+        {{-- II. ADDRESSES --}}
+        <section id="addresses" class="scroll-mt-24">
         <div class="flex items-center justify-between mb-3">
             <div class="text-lg font-semibold">II. Addresses</div>
             <a href="#addresses" class="text-xs text-gray-500 hover:text-gray-700">#</a>
@@ -203,15 +203,34 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium">Home Address</label>
-                <textarea name="home_address" class="w-full border rounded p-2" rows="2">{{ old('home_address', $alumnus->home_address ?? '') }}</textarea>
+                <textarea
+                    id="home_address"
+                    name="home_address"
+                    class="w-full border rounded p-2"
+                    rows="2"
+                >{{ old('home_address', $alumnus->home_address ?? '') }}</textarea>
+            </div>
+
+            {{-- ✅ Option A: Current address same as home --}}
+            <div class="md:col-span-2">
+                <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                    <input type="checkbox" id="same_address" class="rounded border-gray-300">
+                    Current address is the same as Home address
+                </label>
             </div>
 
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium">Current / Present Address</label>
-                <textarea name="current_address" class="w-full border rounded p-2" rows="2">{{ old('current_address', $alumnus->current_address ?? '') }}</textarea>
+                <textarea
+                    id="current_address"
+                    name="current_address"
+                    class="w-full border rounded p-2"
+                    rows="2"
+                >{{ old('current_address', $alumnus->current_address ?? '') }}</textarea>
             </div>
         </div>
     </section>
+
 
     {{-- III. ACADEMIC BACKGROUND --}}
     <section id="academic" class="scroll-mt-24">
@@ -320,25 +339,26 @@
 
 </div>
 
-{{-- Keep full_name in sync with the name fields --}}
+{{-- Keep full_name in sync with the name fields / suffix and others --}}
 <script>
 (function () {
-    const first = document.getElementById('first_name');
+    const first  = document.getElementById('first_name');
     const middle = document.getElementById('middle_name');
-    const last = document.getElementById('last_name');
-    const suffix = document.getElementById('suffix');
+    const last   = document.getElementById('last_name');
+    const suffix = document.getElementById('suffix'); // optional input
 
-    const full = document.getElementById('full_name');
+    const full    = document.getElementById('full_name');
     const preview = document.getElementById('full_name_preview');
 
+    // required elements
     if (!first || !last || !full || !preview) return;
 
     function build() {
         const parts = [
             (first.value || '').trim(),
-            (middle?.value || '').trim(),
+            (middle ? (middle.value || '').trim() : ''),
             (last.value || '').trim(),
-            (suffix?.value || '').trim(),
+            (suffix ? (suffix.value || '').trim() : ''),
         ].filter(Boolean);
 
         const v = parts.join(' ');
@@ -346,7 +366,15 @@
         preview.textContent = v || '—';
     }
 
-    [first, middle, last, suffix].forEach(el => el && el.addEventListener('input', build));
+    // bind input listeners
+    [first, middle, last, suffix].forEach(el => {
+        if (!el) return;
+        el.addEventListener('input', build);
+        el.addEventListener('change', build);
+    });
+
+    // initial sync
     build();
 })();
 </script>
+
