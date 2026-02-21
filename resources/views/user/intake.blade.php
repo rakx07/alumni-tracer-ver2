@@ -61,8 +61,12 @@
     {{-- SCRIPT MUST BE AFTER PARTIAL SO WRAPPERS EXIST --}}
     <script>
     // SAFE JSON (controller already supplies these as plain arrays)
-    const PROGRAMS_BY_CAT = @json($programs_by_cat ?? []);
+   const PROGRAMS_BY_CAT = @json($programs_by_cat ?? []);
     const STRANDS         = @json($strands_list ?? []);
+
+    // ✅ NEW: Pre-listed values (still allow custom typing)
+    const RELIGIONS       = @json($religions_list ?? []);
+    const NATIONALITIES   = @json($nationalities_list ?? []);
 
     document.addEventListener('DOMContentLoaded', () => {
 

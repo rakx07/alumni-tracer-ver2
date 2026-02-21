@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Program;
 use App\Models\Strand;
+use App\Models\Religion;
+use App\Models\Nationality;
 
 class IntakeController extends Controller
 {
@@ -25,7 +27,11 @@ class IntakeController extends Controller
     public function form()
     {
         $alumnus = Alumnus::with([
-            'educations','employments','communityInvolvements','engagementPreference','consent'
+            'educations',
+            'employments',
+            'communityInvolvements',
+            'engagementPreference',
+            'consent'
         ])->where('user_id', Auth::id())->first();
 
         $user = Auth::user();
@@ -51,7 +57,27 @@ class IntakeController extends Controller
             ])
             ->toArray();
 
-        return view('user.intake', compact('alumnus', 'user', 'programs_by_cat', 'strands_list'));
+        $religions_list = Religion::where('is_active', true)
+            ->orderBy('name')
+            ->pluck('name')
+            ->values()
+            ->toArray();
+
+        $nationalities_list = Nationality::where('is_active', true)
+            ->orderByRaw("CASE WHEN UPPER(name) = 'FILIPINO' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->pluck('name')
+            ->values()
+            ->toArray();
+
+        return view('user.intake', compact(
+            'alumnus',
+            'user',
+            'programs_by_cat',
+            'strands_list',
+            'religions_list',
+            'nationalities_list'
+        ));
     }
 
     private function buildFullNameFromUser($user): string
@@ -86,9 +112,8 @@ class IntakeController extends Controller
             'middle_name' => ['nullable','string','max:100'],
             'last_name'   => ['required','string','max:100'],
             'suffix'      => ['nullable','string','max:30'],
-
-            'email' => ['nullable','email','max:255'],
-            'educations' => ['nullable','array'],
+            'email'       => ['nullable','email','max:255'],
+            'educations'  => ['nullable','array'],
             'educations.*.level' => ['required_with:educations','string'],
         ]);
 
@@ -133,22 +158,21 @@ class IntakeController extends Controller
 
             $user = Auth::user();
 
-            // ✅ SAVE NAME PARTS PROPERLY
-            $user->forceFill([
-                'first_name'  => $request->input('first_name'),
-                'middle_name' => $request->input('middle_name'),
-                'last_name'   => $request->input('last_name'),
-                'suffix'      => $request->input('suffix'),
-            ]);
+            // ✅ Server-side uppercase enforcement
+            $firstName  = strtoupper(trim((string) $request->input('first_name')));
+            $middleName = strtoupper(trim((string) $request->input('middle_name')));
+            $lastName   = strtoupper(trim((string) $request->input('last_name')));
+            $suffix     = strtoupper(trim((string) $request->input('suffix')));
 
-            // Keep legacy name column in sync
+            $nationality = strtoupper(trim((string) $request->input('nationality')));
+            $religion    = strtoupper(trim((string) $request->input('religion')));
+
             $user->forceFill([
-                'name' => trim(collect([
-                    $request->input('first_name'),
-                    $request->input('middle_name'),
-                    $request->input('last_name'),
-                    $request->input('suffix'),
-                ])->filter()->implode(' ')),
+                'first_name'  => $firstName,
+                'middle_name' => $middleName ?: null,
+                'last_name'   => $lastName,
+                'suffix'      => $suffix ?: null,
+                'name'        => trim(collect([$firstName, $middleName, $lastName, $suffix])->filter()->implode(' '))
             ]);
 
             $user->save();
@@ -157,9 +181,15 @@ class IntakeController extends Controller
 
             $data = $request->only([
                 'nickname','sex','birthdate','age','civil_status',
-                'home_address','current_address','contact_number','email','facebook',
-                'nationality','religion'
+                'home_address','current_address','contact_number','email','facebook'
             ]);
+
+            // Enforce uppercase for relevant fields
+            $data['nickname']        = isset($data['nickname']) ? strtoupper(trim((string)$data['nickname'])) : null;
+            $data['home_address']    = isset($data['home_address']) ? strtoupper(trim((string)$data['home_address'])) : null;
+            $data['current_address'] = isset($data['current_address']) ? strtoupper(trim((string)$data['current_address'])) : null;
+            $data['nationality']     = $nationality ?: null;
+            $data['religion']        = $religion ?: null;
 
             $data['user_id'] = $user->id;
             $data['full_name'] = $this->buildFullNameFromUser($user);
@@ -175,6 +205,7 @@ class IntakeController extends Controller
                 $alumnus->update($data);
             }
 
+            // Existing logic preserved
             $alumnus->educations()->delete();
             $alumnus->employments()->delete();
             $alumnus->communityInvolvements()->delete();
@@ -211,7 +242,6 @@ class IntakeController extends Controller
             foreach ($request->input('employments', []) as $row) {
                 $hasAny = collect($row)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
                 if (!$hasAny) continue;
-
                 $alumnus->employments()->create($row);
             }
 

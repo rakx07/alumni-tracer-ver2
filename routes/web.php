@@ -115,6 +115,38 @@ Route::middleware(['auth', 'verified', 'role:it_admin'])
         // Strands template download
         Route::get('/strands/template', [StrandController::class, 'downloadTemplate'])
             ->name('strands.template');
+
+
+        // ================= NATIONALITIES =================
+        Route::get('/nationalities', [\App\Http\Controllers\ITAdmin\NationalityController::class, 'index'])
+            ->name('nationalities.index');
+        Route::get('/nationalities/create', [\App\Http\Controllers\ITAdmin\NationalityController::class, 'create'])
+            ->name('nationalities.create');
+        Route::post('/nationalities', [\App\Http\Controllers\ITAdmin\NationalityController::class, 'store'])
+            ->name('nationalities.store');
+        Route::get('/nationalities/{nationality}/edit', [\App\Http\Controllers\ITAdmin\NationalityController::class, 'edit'])
+            ->name('nationalities.edit');
+        Route::put('/nationalities/{nationality}', [\App\Http\Controllers\ITAdmin\NationalityController::class, 'update'])
+            ->name('nationalities.update');
+        Route::post('/nationalities/{nationality}/toggle', [\App\Http\Controllers\ITAdmin\NationalityController::class, 'toggle'])
+            ->name('nationalities.toggle');
+
+        // ================= RELIGIONS =================
+        Route::get('/religions', [\App\Http\Controllers\ITAdmin\ReligionController::class, 'index'])
+            ->name('religions.index');
+        Route::get('/religions/create', [\App\Http\Controllers\ITAdmin\ReligionController::class, 'create'])
+            ->name('religions.create');
+        Route::post('/religions', [\App\Http\Controllers\ITAdmin\ReligionController::class, 'store'])
+            ->name('religions.store');
+        Route::get('/religions/{religion}/edit', [\App\Http\Controllers\ITAdmin\ReligionController::class, 'edit'])
+            ->name('religions.edit');
+        Route::put('/religions/{religion}', [\App\Http\Controllers\ITAdmin\ReligionController::class, 'update'])
+            ->name('religions.update');
+        Route::post('/religions/{religion}/toggle', [\App\Http\Controllers\ITAdmin\ReligionController::class, 'toggle'])
+            ->name('religions.toggle');
+
+
+
     });
 
 /* ================= PORTAL EVENTS (Officer/Admin) ================= */

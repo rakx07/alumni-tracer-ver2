@@ -179,17 +179,72 @@
                        value="{{ old('facebook', $alumnus->facebook ?? '') }}">
             </div>
 
-            <div>
-                <label class="block text-sm font-medium">Nationality</label>
-                <input name="nationality" class="w-full border rounded p-2"
-                       value="{{ old('nationality', $alumnus->nationality ?? '') }}">
-            </div>
+            @php
+            // These lists are provided by IntakeController (Batch N3 Step 1)
+            $religions_list = $religions_list ?? [];
+            $nationalities_list = $nationalities_list ?? [];
 
-            <div>
-                <label class="block text-sm font-medium">Religion</label>
-                <input name="religion" class="w-full border rounded p-2"
-                       value="{{ old('religion', $alumnus->religion ?? '') }}">
+            // Make sure FILIPINO is first in the datalist (case-insensitive)
+            $nationalities_upper = collect($nationalities_list)
+                ->map(fn($x) => strtoupper(trim((string)$x)))
+                ->filter()
+                ->unique()
+                ->values();
+
+            $hasFilipino = $nationalities_upper->contains('FILIPINO');
+            $nationalities_ordered = collect()
+                ->when($hasFilipino, fn($c) => $c->push('FILIPINO'))
+                ->merge($nationalities_upper->reject(fn($x) => $x === 'FILIPINO'))
+                ->values();
+
+            $religions_ordered = collect($religions_list)
+                ->map(fn($x) => strtoupper(trim((string)$x)))
+                ->filter()
+                ->unique()
+                ->values();
+        @endphp
+
+        <div>
+            <label class="block text-sm font-medium">Nationality</label>
+            <input
+                name="nationality"
+                list="nationalities_datalist"
+                class="w-full border rounded p-2"
+                placeholder="Type to search (e.g., FILIPINO)"
+                value="{{ old('nationality', $alumnus->nationality ?? '') }}"
+            >
+            <div class="text-xs text-gray-500 mt-1">
+                Type to search from the list, or enter a new nationality if not available.
             </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium">Religion</label>
+            <input
+                name="religion"
+                list="religions_datalist"
+                class="w-full border rounded p-2"
+                placeholder="Type to search (e.g., ROMAN CATHOLIC)"
+                value="{{ old('religion', $alumnus->religion ?? '') }}"
+            >
+            <div class="text-xs text-gray-500 mt-1">
+                Type to search from the list, or enter a new religion if not available.
+            </div>
+        </div>
+
+        {{-- Suggestion lists (allows free typing too) --}}
+        <datalist id="nationalities_datalist">
+            @foreach($nationalities_ordered as $n)
+                <option value="{{ $n }}"></option>
+            @endforeach
+        </datalist>
+
+        <datalist id="religions_datalist">
+            @foreach($religions_ordered as $r)
+                <option value="{{ $r }}"></option>
+            @endforeach
+        </datalist>
+
         </div>
     </section>
 
