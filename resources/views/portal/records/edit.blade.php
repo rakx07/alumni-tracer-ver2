@@ -184,7 +184,7 @@
 
                 <div class="panel p-6">
                     {{-- Reuse intake form UI --}}
-                   @php($alumnusLocal = $alumnus)
+                    @php($alumnusLocal = $alumnus)
 
                     @include('user._intake_form', [
                         'alumnus' => $alumnusLocal,
@@ -223,18 +223,18 @@
         })();
     </script>
 
-    {{-- Portal Edit dynamic JS (Programs + Strands + Graduate + Others) --}}
+    {{-- Portal Edit dynamic JS (RESTORED + MATCHES INTAKE) --}}
     <script>
+    // SAFE JSON (controller already supplies these as plain arrays)
+    const PROGRAMS_BY_CAT = @json($programs_by_cat ?? []);
+    const STRANDS         = @json($strands_list ?? []);
+
     document.addEventListener('DOMContentLoaded', () => {
 
         // ========= EXISTING ROWS =========
         const existingEducations  = @json(old('educations',  $alumnus?->educations?->toArray() ?? []));
         const existingEmployments = @json(old('employments', $alumnus?->employments?->toArray() ?? []));
         const existingCommunity   = @json(old('community',   $alumnus?->communityInvolvements?->toArray() ?? []));
-
-        // ========= SAFE DATA FROM CONTROLLER =========
-        const PROGRAMS_BY_CAT = @json($programs_by_cat ?? []);
-        const STRANDS         = @json($strands_list ?? []);
 
         // ========= DOM WRAPPERS =========
         const educationWrap  = document.getElementById('education-wrap');
@@ -284,7 +284,59 @@
         }
         syncAgeFromBirthdate();
 
+        // ==============================
+        // CAPSLOCK / AUTO-UPPERCASE (SAFE)
+        // ==============================
+        function shouldUppercase(el) {
+            if (!el) return false;
+            if (el.dataset && el.dataset.noCaps === '1') return false;
+            if (el.name === 'email') return false;
+            if (el.type === 'date' || el.type === 'number' || el.type === 'checkbox' || el.type === 'radio' || el.type === 'file' || el.type === 'password') return false;
+
+            const tag = (el.tagName || '').toLowerCase();
+            if (tag === 'textarea') return true;
+            if (tag === 'input') {
+                const t = (el.getAttribute('type') || 'text').toLowerCase();
+                return (t === 'text' || t === '' || t === 'search' || t === 'tel');
+            }
+            return false;
+        }
+
+        function forceUppercase(el) {
+            if (!shouldUppercase(el)) return;
+
+            el.style.textTransform = 'uppercase';
+
+            if (el.dataset && el.dataset.capsBound === '1') return;
+            if (el.dataset) el.dataset.capsBound = '1';
+
+            const handler = () => {
+                const start = el.selectionStart;
+                const end   = el.selectionEnd;
+
+                const upper = (el.value || '').toUpperCase();
+                if (el.value !== upper) {
+                    el.value = upper;
+                    if (typeof start === 'number' && typeof end === 'number') {
+                        try { el.setSelectionRange(start, end); } catch (e) {}
+                    }
+                }
+            };
+
+            el.addEventListener('input', handler);
+            el.addEventListener('blur', handler);
+            el.addEventListener('change', handler);
+            handler();
+        }
+
+        function applyUppercaseToContainer(root) {
+            if (!root || !root.querySelectorAll) return;
+            root.querySelectorAll('input, textarea').forEach(forceUppercase);
+        }
+        applyUppercaseToContainer(document);
+
         // ========= VISIBILITY RULES =========
+        // NOTE: post_ndmu has NO program dropdown now.
         const EDU_RULES = {
             ndmu_elementary: ['did_graduate','year_entered','year_graduated','last_year_attended'],
             ndmu_jhs:        ['did_graduate','year_entered','year_graduated','last_year_attended'],
@@ -315,6 +367,10 @@
         }
 
         function applyGraduateLogic(cardEl) {
+            const levelSel = cardEl.querySelector('select[data-edu-level]');
+            const level = levelSel ? levelSel.value : '';
+            if (level === 'post_ndmu') return; // important: don't re-show hidden fields
+
             const gradSel = cardEl.querySelector('select[data-did-graduate]');
             const gradVal = gradSel ? gradSel.value : '';
 
@@ -344,6 +400,8 @@
         }
 
         function populatePrograms(programSelectEl, level) {
+            if (!programSelectEl) return;
+
             const cat = categoryForLevel(level);
             const list = (cat && PROGRAMS_BY_CAT[cat]) ? PROGRAMS_BY_CAT[cat] : [];
 
@@ -360,11 +418,14 @@
             const otherWrap  = cardEl.querySelector('[data-field="specific_program"]');
             if (!programSel || !otherWrap) return;
 
-            const showOther = programSel.value === '__other__';
-            otherWrap.style.display = showOther ? '' : 'none';
+            const input = otherWrap.querySelector('input, textarea');
+            const isOther = programSel.value === '__other__';
 
-            if (!showOther) {
-                otherWrap.querySelectorAll('input, textarea').forEach(el => el.value = '');
+            otherWrap.style.display = isOther ? '' : 'none';
+
+            if (input) {
+                input.disabled = !isOther;
+                if (!isOther) input.value = '';
             }
         }
 
@@ -383,7 +444,7 @@
 
             div.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
-                    <div class="font-semibold" style="color:var(--ndmu-green)">Education</div>
+                    <div class="font-semibold" style="color:var(--ndmu-green)">Education Level</div>
                     <button type="button" class="text-red-600 font-semibold" data-remove>Remove</button>
                 </div>
 
@@ -437,7 +498,7 @@
                         <label class="block font-medium">Strand (Master List)</label>
                         <select name="educations[${i}][strand_id]" class="w-full border rounded p-2" data-strand>
                             <option value="">-- select --</option>
-                            ${STRANDS.map(s => `<option value="${s.id}">${s.code} — ${s.name}</option>`).join('')}
+                            ${Array.isArray(STRANDS) ? STRANDS.map(s => `<option value="${s.id}">${s.code} — ${s.name}</option>`).join('') : ''}
                         </select>
                         <div class="text-xs text-gray-500 mt-1">If not listed, use “Strand/Track (text)”.</div>
                     </div>
@@ -474,7 +535,7 @@
                     </div>
 
                     <div class="md:col-span-2" data-field="course_degree">
-                        <label class="block font-medium">Course / Degree (Post-NDMU)</label>
+                        <label class="block font-medium">Course / Degree</label>
                         <input name="educations[${i}][course_degree]" class="w-full border rounded p-2"
                                value="${data.course_degree ?? ''}">
                     </div>
@@ -498,26 +559,19 @@
             const programSel = div.querySelector('select[data-program]');
 
             levelSel.value = data.level ?? '';
+
             const dg = data.did_graduate;
+            if (dg === true || dg === 1 || dg === "1") gradSel.value = "1";
+            else if (dg === false || dg === 0 || dg === "0") gradSel.value = "0";
+            else gradSel.value = "";
 
-            // normalize did_graduate into "1" | "0" | ""
-            if (dg === true || dg === 1 || dg === "1") {
-                gradSel.value = "1";
-            } else if (dg === false || dg === 0 || dg === "0") {
-                gradSel.value = "0";
-            } else {
-                gradSel.value = "";
-            }
-
-
+            // populate programs only for NDMU college/grad/law
             populatePrograms(programSel, levelSel.value);
 
-            if (data.program_id) {
-                programSel.value = String(data.program_id);
-            } else if (data.specific_program) {
-                programSel.value = '__other__';
-            } else {
-                programSel.value = '';
+            if (programSel) {
+                if (data.program_id) programSel.value = String(data.program_id);
+                else if (data.specific_program) programSel.value = '__other__';
+                else programSel.value = '';
             }
 
             const strandSel = div.querySelector('select[data-strand]');
@@ -527,14 +581,16 @@
 
             levelSel.addEventListener('change', () => {
                 populatePrograms(programSel, levelSel.value);
-                programSel.value = '';
+                if (programSel) programSel.value = '';
                 applyEducationVisibility(div);
             });
 
             gradSel.addEventListener('change', () => applyEducationVisibility(div));
-            programSel.addEventListener('change', () => applyEducationVisibility(div));
+            if (programSel) programSel.addEventListener('change', () => applyEducationVisibility(div));
 
             div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
+
+            applyUppercaseToContainer(div);
 
             return div;
         }
@@ -543,6 +599,7 @@
         function employmentCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";
+
             div.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
                     <div class="font-semibold" style="color:var(--ndmu-green)">Employment</div>
@@ -597,9 +654,11 @@
             `;
 
             const sel = div.querySelector(`select[name="employments[${i}][org_type]"]`);
-            sel.value = data.org_type ?? '';
+            if (sel) sel.value = data.org_type ?? '';
 
             div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
+
+            applyUppercaseToContainer(div);
             return div;
         }
 
@@ -607,6 +666,7 @@
         function communityCard(i, data = {}) {
             const div = document.createElement('div');
             div.className = "border rounded p-4 bg-gray-50";
+
             div.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
                     <div class="font-semibold" style="color:var(--ndmu-green)">Organization / Association</div>
@@ -630,6 +690,8 @@
             `;
 
             div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
+
+            applyUppercaseToContainer(div);
             return div;
         }
 
@@ -655,7 +717,7 @@
 
         init();
 
-        // Add buttons
+        // ========= ADD BUTTONS =========
         addEduBtn?.addEventListener('click', () => {
             const i = educationWrap.querySelectorAll(':scope > div').length;
             educationWrap.appendChild(educationCard(i, {}));
