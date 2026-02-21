@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="md:col-span-2" data-field="course_degree">
-                    <label class="block font-medium">Course / Degree (Post-NDMU)</label>
+                    <label class="block font-medium">Course / Degree</label>
                     <input name="educations[${i}][course_degree]" class="w-full border rounded p-2" value="${data.course_degree ?? ''}">
                 </div>
 

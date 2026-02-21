@@ -231,6 +231,14 @@
                         </div>
                     @endif
 
+                    {{-- NOTE: after creating, you will proceed to the full intake/encoding form in the edit screen --}}
+                    <div class="panel p-4" style="background:rgba(11,61,46,.04); border-color:rgba(11,61,46,.18);">
+                        <div class="text-sm font-extrabold" style="color:var(--ndmu-green);">Next Step</div>
+                        <div class="help mt-1">
+                            After you click <b>Create Record</b>, you will be redirected to the full encoding form to complete Academic, Employment, and other details.
+                        </div>
+                    </div>
+
                     <form method="POST"
                           action="{{ route('portal.alumni_encoding.store') }}"
                           class="space-y-4">
@@ -345,4 +353,58 @@
 
         </div>
     </div>
+
+    {{-- Apply Intake-style auto-uppercase here too (names, but NOT email fields) --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            function shouldUppercase(el) {
+                if (!el) return false;
+
+                // allow opt-out: data-no-caps="1"
+                if (el.dataset && el.dataset.noCaps === '1') return false;
+
+                // exclude emails + non-text inputs
+                if (el.name === 'email' || el.name === 'user_email') return false;
+                if (el.type === 'email' || el.type === 'date' || el.type === 'number' || el.type === 'checkbox' || el.type === 'radio' || el.type === 'file' || el.type === 'password') return false;
+
+                const tag = (el.tagName || '').toLowerCase();
+                if (tag === 'textarea') return true;
+                if (tag === 'input') {
+                    const t = (el.getAttribute('type') || 'text').toLowerCase();
+                    return (t === 'text' || t === '' || t === 'search' || t === 'tel');
+                }
+                return false;
+            }
+
+            function forceUppercase(el) {
+                if (!shouldUppercase(el)) return;
+
+                el.style.textTransform = 'uppercase';
+
+                if (el.dataset && el.dataset.capsBound === '1') return;
+                if (el.dataset) el.dataset.capsBound = '1';
+
+                const handler = () => {
+                    const start = el.selectionStart;
+                    const end   = el.selectionEnd;
+
+                    const upper = (el.value || '').toUpperCase();
+                    if (el.value !== upper) {
+                        el.value = upper;
+                        if (typeof start === 'number' && typeof end === 'number') {
+                            try { el.setSelectionRange(start, end); } catch (e) {}
+                        }
+                    }
+                };
+
+                el.addEventListener('input', handler);
+                el.addEventListener('blur', handler);
+                el.addEventListener('change', handler);
+                handler();
+            }
+
+            document.querySelectorAll('input, textarea').forEach(forceUppercase);
+        });
+    </script>
 </x-app-layout>
