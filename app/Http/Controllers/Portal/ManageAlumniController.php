@@ -159,7 +159,17 @@ public function edit(Alumnus $alumnus)
         })
         ->toArray();
 
-    return view('portal.records.edit', compact('alumnus', 'programs_by_cat', 'strands_list'));
+    // ✅ ADD THESE (same data that intake.blade.php likely receives)
+    $nationalities = \App\Models\Nationality::orderBy('name')->get();
+    $religions     = \App\Models\Religion::orderBy('name')->get();
+
+    return view('portal.records.edit', compact(
+        'alumnus',
+        'programs_by_cat',
+        'strands_list',
+        'nationalities',
+        'religions'
+    ));
 }
 
 

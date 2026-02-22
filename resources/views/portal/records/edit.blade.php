@@ -1,5 +1,15 @@
 {{-- resources/views/portal/records/edit.blade.php --}}
 <x-app-layout>
+
+@include('user._intake_js', [
+    'alumnus' => $alumnus,
+    'programs_by_cat' => $programs_by_cat ?? [],
+    'strands_list' => $strands_list ?? [],
+    'religions_list' => $religions_list ?? [],
+    'nationalities_list' => $nationalities_list ?? [],
+])
+
+
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>

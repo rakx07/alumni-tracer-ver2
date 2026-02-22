@@ -1,18 +1,17 @@
 {{-- resources/views/user/_intake_js.blade.php --}}
-@include('user._intake_js')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // =========================
+    // Data from controller
+    const PROGRAMS_BY_CAT = @json($programs_by_cat ?? []);
+    const STRANDS         = @json($strands_list ?? []);
+
     // Existing rows (create + edit)
-    // =========================
     const existingEducations  = @json(old('educations',  $alumnus?->educations?->toArray() ?? []));
     const existingEmployments = @json(old('employments', $alumnus?->employments?->toArray() ?? []));
     const existingCommunity   = @json(old('community',   $alumnus?->communityInvolvements?->toArray() ?? []));
 
-    // =========================
-    // DOM WRAPPERS
-    // =========================
+    // Wrappers
     const educationWrap  = document.getElementById('education-wrap');
     const employmentWrap = document.getElementById('employment-wrap');
     const communityWrap  = document.getElementById('community-wrap');
@@ -27,7 +26,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================
-    // AGE AUTO COMPUTE (make age readonly)
+    // Addresses: Same as Home
+    // =========================
+    const sameAddress    = document.getElementById('same_address');
+    const homeAddress    = document.getElementById('home_address');
+    const currentAddress = document.getElementById('current_address');
+
+    function setCurrentReadonly(isReadonly) {
+        if (!currentAddress) return;
+        currentAddress.readOnly = !!isReadonly;
+        currentAddress.classList.toggle('bg-gray-100', !!isReadonly);
+        currentAddress.classList.toggle('text-gray-600', !!isReadonly);
+        currentAddress.classList.toggle('cursor-not-allowed', !!isReadonly);
+    }
+
+    function copyHomeToCurrent() {
+        if (!homeAddress || !currentAddress) return;
+        currentAddress.value = homeAddress.value || '';
+    }
+
+    function applySameAddressState() {
+        if (!sameAddress || !homeAddress || !currentAddress) return;
+
+        if (sameAddress.checked) {
+            if (currentAddress.dataset.prevValue === undefined) {
+                currentAddress.dataset.prevValue = currentAddress.value || '';
+            }
+            copyHomeToCurrent();
+            setCurrentReadonly(true);
+        } else {
+            const prev = currentAddress.dataset.prevValue;
+            if (prev !== undefined) currentAddress.value = prev;
+            delete currentAddress.dataset.prevValue;
+            setCurrentReadonly(false);
+        }
+    }
+
+    if (sameAddress && homeAddress && currentAddress) {
+        sameAddress.addEventListener('change', applySameAddressState);
+
+        homeAddress.addEventListener('input', () => {
+            if (sameAddress.checked) copyHomeToCurrent();
+        });
+
+        const homeVal = (homeAddress.value || '').trim();
+        const currVal = (currentAddress.value || '').trim();
+        if (homeVal && currVal && homeVal === currVal) {
+            sameAddress.checked = true;
+        }
+
+        applySameAddressState();
+
+        const form = currentAddress.closest('form');
+        if (form) {
+            form.addEventListener('submit', () => {
+                if (sameAddress.checked) copyHomeToCurrent();
+            });
+        }
+    }
+
+    // =========================
+    // Age auto compute (readonly)
     // =========================
     const ageInput = document.querySelector('input[name="age"]');
     if (ageInput) {
@@ -63,31 +122,16 @@ document.addEventListener('DOMContentLoaded', () => {
     syncAgeFromBirthdate();
 
     // =========================
-    // EDUCATION VISIBILITY RULES (YOUR REQUIREMENTS)
+    // Education rules
     // =========================
     const EDU_RULES = {
-        ndmu_elementary: ['student_number','year_entered','year_graduated','last_year_attended'],
-        ndmu_jhs: ['student_number','year_entered','year_graduated','last_year_attended'],
-        ndmu_shs: ['student_number','year_entered','year_graduated','last_year_attended','strand_track'],
-        ndmu_college: [
-            'student_number','year_entered','year_graduated','last_year_attended',
-            'strand_track','degree_program','thesis_title',
-            'honors_awards','extracurricular_activities','clubs_organizations',
-            'year_completed','scholarship_award'
-        ],
-        ndmu_grad_school: [
-            'student_number','year_entered','year_graduated','last_year_attended',
-            'strand_track','degree_program','thesis_title',
-            'honors_awards','extracurricular_activities','clubs_organizations',
-            'year_completed','scholarship_award'
-        ],
-        ndmu_law: [
-            'student_number','year_entered','year_graduated','last_year_attended',
-            'strand_track','degree_program','thesis_title',
-            'honors_awards','extracurricular_activities','clubs_organizations',
-            'year_completed','scholarship_award'
-        ],
-        post_ndmu: ['institution_name','institution_address','course_degree','year_completed','scholarship_award','notes'],
+        ndmu_elementary:  ['did_graduate','year_entered','year_graduated','last_year_attended'],
+        ndmu_jhs:         ['did_graduate','year_entered','year_graduated','last_year_attended'],
+        ndmu_shs:         ['did_graduate','year_entered','year_graduated','last_year_attended','strand_id'],
+        ndmu_college:     ['did_graduate','year_entered','year_graduated','last_year_attended','program_id','specific_program'],
+        ndmu_grad_school: ['did_graduate','year_entered','year_graduated','last_year_attended','program_id','specific_program'],
+        ndmu_law:         ['did_graduate','year_entered','year_graduated','last_year_attended','program_id','specific_program'],
+        post_ndmu:        ['institution_name','institution_address','course_degree','year_completed','notes'],
     };
 
     function setVisibility(cardEl, allowedKeys = []) {
@@ -100,7 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const show = allowed.has(key);
             wrapper.style.display = show ? '' : 'none';
 
-            // Clear values when hidden
             if (!show) {
                 wrapper.querySelectorAll('input, textarea, select').forEach(el => {
                     if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
@@ -110,14 +153,78 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function applyGraduateLogic(cardEl) {
+        const levelSel = cardEl.querySelector('select[data-edu-level]');
+        const level = levelSel ? levelSel.value : '';
+        if (level === 'post_ndmu') return;
+
+        const gradSel = cardEl.querySelector('select[data-did-graduate]');
+        const gradVal = gradSel ? gradSel.value : '';
+
+        const yg = cardEl.querySelector('[data-field="year_graduated"]');
+        const la = cardEl.querySelector('[data-field="last_year_attended"]');
+        if (!yg || !la) return;
+
+        if (gradVal === '1') {
+            yg.style.display = '';
+            la.style.display = 'none';
+            la.querySelectorAll('input').forEach(i => i.value = '');
+        } else if (gradVal === '0') {
+            yg.style.display = 'none';
+            la.style.display = '';
+            yg.querySelectorAll('input').forEach(i => i.value = '');
+        } else {
+            yg.style.display = '';
+            la.style.display = '';
+        }
+    }
+
+    function categoryForLevel(level) {
+        if (level === 'ndmu_college') return 'college';
+        if (level === 'ndmu_grad_school') return 'grad_school';
+        if (level === 'ndmu_law') return 'law';
+        return null;
+    }
+
+    function populatePrograms(programSelectEl, level) {
+        if (!programSelectEl) return;
+
+        const cat = categoryForLevel(level);
+        const list = (cat && PROGRAMS_BY_CAT && PROGRAMS_BY_CAT[cat]) ? PROGRAMS_BY_CAT[cat] : [];
+
+        let html = `<option value="">-- select --</option>`;
+        list.forEach(p => {
+            html += `<option value="${p.id}">${p.code ? (p.code + ' — ') : ''}${p.name}</option>`;
+        });
+        html += `<option value="__other__">Others (Specify)</option>`;
+        programSelectEl.innerHTML = html;
+    }
+
+    function syncOtherProgram(cardEl) {
+        const progSel   = cardEl.querySelector('select[data-program]');
+        const otherWrap = cardEl.querySelector('[data-field="specific_program"]');
+        if (!progSel || !otherWrap) return;
+
+        const input = otherWrap.querySelector('input, textarea');
+        const isOther = progSel.value === '__other__';
+
+        otherWrap.style.display = isOther ? '' : 'none';
+        if (input) {
+            input.disabled = !isOther;
+            if (!isOther) input.value = '';
+        }
+    }
+
     function applyEducationVisibility(cardEl) {
         const levelSel = cardEl.querySelector('select[data-edu-level]');
         const level = levelSel ? levelSel.value : '';
         setVisibility(cardEl, EDU_RULES[level] || []);
+        applyGraduateLogic(cardEl);
+        syncOtherProgram(cardEl);
     }
 
     // =========================
-    // EDUCATION CARD
+    // Education card (Did Graduate + Program)
     // =========================
     function educationCard(i, data = {}) {
         const div = document.createElement('div');
@@ -130,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-
                 <div data-field="level">
                     <label class="block font-medium">Level</label>
                     <select data-edu-level name="educations[${i}][level]" class="w-full border rounded p-2" required>
@@ -145,13 +251,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     </select>
                 </div>
 
-                <div data-field="student_number">
-                    <label class="block font-medium">Student Number / LRN (if known)</label>
-                    <input name="educations[${i}][student_number]" class="w-full border rounded p-2" value="${data.student_number ?? ''}">
+                <div data-field="did_graduate">
+                    <label class="block font-medium">Did you graduate?</label>
+                    <select data-did-graduate name="educations[${i}][did_graduate]" class="w-full border rounded p-2">
+                        <option value="">--</option>
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                    </select>
                 </div>
 
                 <div data-field="year_entered">
-                    <label class="block font-medium">Year Entered</label>
+                    <label class="block font-medium">Year Started</label>
                     <input name="educations[${i}][year_entered]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_entered ?? ''}">
                 </div>
 
@@ -161,49 +271,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div data-field="last_year_attended">
-                    <label class="block font-medium">Last Year Attended</label>
+                    <label class="block font-medium">Last School Year Attended</label>
                     <input name="educations[${i}][last_year_attended]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.last_year_attended ?? ''}">
                 </div>
 
-                <div data-field="strand_track">
-                    <label class="block font-medium">Strand/Track (SHS)</label>
-                    <input name="educations[${i}][strand_track]" class="w-full border rounded p-2" value="${data.strand_track ?? ''}">
-                    <div class="text-xs text-gray-500 mt-1">Optional for College/Grad/Law.</div>
+                <div data-field="strand_id">
+                    <label class="block font-medium">Strand (SHS)</label>
+                    <select name="educations[${i}][strand_id]" class="w-full border rounded p-2">
+                        <option value="">-- select --</option>
+                        ${(Array.isArray(STRANDS) ? STRANDS : []).map(s => `<option value="${s.id}">${s.code} — ${s.name}</option>`).join('')}
+                    </select>
                 </div>
 
-                <div class="md:col-span-2" data-field="degree_program">
-                    <label class="block font-medium">Degree/Program</label>
-                    <input name="educations[${i}][degree_program]" class="w-full border rounded p-2" value="${data.degree_program ?? ''}">
+                <div data-field="program_id">
+                    <label class="block font-medium">Program</label>
+                    <select data-program name="educations[${i}][program_id]" class="w-full border rounded p-2">
+                        <option value="">-- select --</option>
+                        <option value="__other__">Others (Specify)</option>
+                    </select>
                 </div>
 
-                <div class="md:col-span-2" data-field="thesis_title">
-                    <label class="block font-medium">Thesis Title (if applicable)</label>
-                    <input name="educations[${i}][thesis_title]" class="w-full border rounded p-2" value="${data.thesis_title ?? ''}">
-                </div>
-
-                <div class="md:col-span-2" data-field="honors_awards">
-                    <label class="block font-medium">Honors/Awards</label>
-                    <textarea name="educations[${i}][honors_awards]" class="w-full border rounded p-2" rows="2">${data.honors_awards ?? ''}</textarea>
-                </div>
-
-                <div class="md:col-span-2" data-field="extracurricular_activities">
-                    <label class="block font-medium">Extracurricular Activities</label>
-                    <textarea name="educations[${i}][extracurricular_activities]" class="w-full border rounded p-2" rows="2">${data.extracurricular_activities ?? ''}</textarea>
-                </div>
-
-                <div class="md:col-span-2" data-field="clubs_organizations">
-                    <label class="block font-medium">Clubs/Organizations Joined</label>
-                    <textarea name="educations[${i}][clubs_organizations]" class="w-full border rounded p-2" rows="2">${data.clubs_organizations ?? ''}</textarea>
-                </div>
-
-                <div data-field="year_completed">
-                    <label class="block font-medium">Year Completed</label>
-                    <input name="educations[${i}][year_completed]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_completed ?? ''}">
-                </div>
-
-                <div data-field="scholarship_award">
-                    <label class="block font-medium">Scholarship/Award</label>
-                    <input name="educations[${i}][scholarship_award]" class="w-full border rounded p-2" value="${data.scholarship_award ?? ''}">
+                <div data-field="specific_program">
+                    <label class="block font-medium">If Others, specify program</label>
+                    <input name="educations[${i}][specific_program]" class="w-full border rounded p-2" value="${data.specific_program ?? ''}">
                 </div>
 
                 <div class="md:col-span-2" data-field="institution_name">
@@ -217,23 +307,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="md:col-span-2" data-field="course_degree">
-                    <label class="block font-medium">Course / Degree</label>
+                    <label class="block font-medium">Program / Course Taken</label>
                     <input name="educations[${i}][course_degree]" class="w-full border rounded p-2" value="${data.course_degree ?? ''}">
+                </div>
+
+                <div data-field="year_completed">
+                    <label class="block font-medium">Year Completed</label>
+                    <input name="educations[${i}][year_completed]" class="w-full border rounded p-2" placeholder="YYYY" inputmode="numeric" value="${data.year_completed ?? ''}">
                 </div>
 
                 <div class="md:col-span-2" data-field="notes">
                     <label class="block font-medium">Notes</label>
                     <textarea name="educations[${i}][notes]" class="w-full border rounded p-2" rows="2">${data.notes ?? ''}</textarea>
                 </div>
-
             </div>
         `;
 
-        const sel = div.querySelector('select[data-edu-level]');
-        sel.value = data.level ?? '';
+        const levelSel = div.querySelector('select[data-edu-level]');
+        const gradSel  = div.querySelector('select[data-did-graduate]');
+        const progSel  = div.querySelector('select[data-program]');
+        const strandSel = div.querySelector(`select[name="educations[${i}][strand_id]"]`);
+
+        levelSel.value = data.level ?? '';
+
+        const dg = data.did_graduate;
+        if (dg === true || dg === 1 || dg === "1") gradSel.value = "1";
+        else if (dg === false || dg === 0 || dg === "0") gradSel.value = "0";
+        else gradSel.value = "";
+
+        populatePrograms(progSel, levelSel.value);
+
+        if (data.program_id) {
+            progSel.value = String(data.program_id);
+        } else if (data.specific_program) {
+            progSel.value = '__other__';
+        } else {
+            progSel.value = '';
+        }
+
+        if (strandSel && data.strand_id) {
+            strandSel.value = String(data.strand_id);
+        }
 
         applyEducationVisibility(div);
-        sel.addEventListener('change', () => applyEducationVisibility(div));
+
+        levelSel.addEventListener('change', () => {
+            populatePrograms(progSel, levelSel.value);
+            progSel.value = '';
+            applyEducationVisibility(div);
+        });
+
+        gradSel.addEventListener('change', () => applyEducationVisibility(div));
+        progSel.addEventListener('change', () => syncOtherProgram(div));
 
         div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
 
@@ -241,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================
-    // EMPLOYMENT CARD
+    // Employment card
     // =========================
     function employmentCard(i, data = {}) {
         const div = document.createElement('div');
@@ -254,14 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                <div>
-                    <label class="block font-medium">Current Status</label>
-                    <input name="employments[${i}][current_status]" class="w-full border rounded p-2" value="${data.current_status ?? ''}">
-                </div>
-                <div>
-                    <label class="block font-medium">Occupation/Position</label>
-                    <input name="employments[${i}][occupation_position]" class="w-full border rounded p-2" value="${data.occupation_position ?? ''}">
-                </div>
                 <div>
                     <label class="block font-medium">Company/Organization</label>
                     <input name="employments[${i}][company_name]" class="w-full border rounded p-2" value="${data.company_name ?? ''}">
@@ -277,39 +394,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="other">Other</option>
                     </select>
                 </div>
-                <div class="md:col-span-2">
-                    <label class="block font-medium">Work Address</label>
-                    <textarea name="employments[${i}][work_address]" class="w-full border rounded p-2" rows="2">${data.work_address ?? ''}</textarea>
+                <div>
+                    <label class="block font-medium">Occupation/Position</label>
+                    <input name="employments[${i}][occupation_position]" class="w-full border rounded p-2" value="${data.occupation_position ?? ''}">
                 </div>
                 <div>
-                    <label class="block font-medium">Contact Info</label>
-                    <input name="employments[${i}][contact_info]" class="w-full border rounded p-2" value="${data.contact_info ?? ''}">
-                </div>
-                <div>
-                    <label class="block font-medium">Years of Service / Start</label>
-                    <input name="employments[${i}][years_of_service_or_start]" class="w-full border rounded p-2" value="${data.years_of_service_or_start ?? ''}">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block font-medium">Licenses/Certifications</label>
-                    <textarea name="employments[${i}][licenses_certifications]" class="w-full border rounded p-2" rows="2">${data.licenses_certifications ?? ''}</textarea>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block font-medium">Achievements/Awards</label>
-                    <textarea name="employments[${i}][achievements_awards]" class="w-full border rounded p-2" rows="2">${data.achievements_awards ?? ''}</textarea>
+                    <label class="block font-medium">Current Status</label>
+                    <input name="employments[${i}][current_status]" class="w-full border rounded p-2" value="${data.current_status ?? ''}">
                 </div>
             </div>
         `;
 
         const sel = div.querySelector(`select[name="employments[${i}][org_type]"]`);
-        sel.value = data.org_type ?? '';
+        if (sel) sel.value = data.org_type ?? '';
 
         div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
-
         return div;
     }
 
     // =========================
-    // COMMUNITY CARD
+    // Community card
     // =========================
     function communityCard(i, data = {}) {
         const div = document.createElement('div');
@@ -338,12 +442,11 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         div.querySelector('[data-remove]').addEventListener('click', () => div.remove());
-
         return div;
     }
 
     // =========================
-    // INIT
+    // Init
     // =========================
     function init() {
         educationWrap.innerHTML = "";
@@ -366,7 +469,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     init();
 
-    // Add buttons
     addEduBtn?.addEventListener('click', () => {
         const i = educationWrap.querySelectorAll(':scope > div').length;
         educationWrap.appendChild(educationCard(i, {}));

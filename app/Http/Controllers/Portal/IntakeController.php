@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Alumnus;
+use App\Models\Nationality;
+use App\Models\Program;
+use App\Models\Religion;
+use App\Models\Strand;
+use App\Models\User; // ✅ add this
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\Program;
-use App\Models\Strand;
-use App\Models\Religion;
-use App\Models\Nationality;
 
 class IntakeController extends Controller
 {
@@ -34,13 +35,14 @@ class IntakeController extends Controller
             'consent'
         ])->where('user_id', Auth::id())->first();
 
-        $user = Auth::user();
+        /** @var \App\Models\User $user */   // ✅ helps Intelephense
+        $user = User::findOrFail(Auth::id()); // ✅ strongly typed Eloquent model
 
         $programs_by_cat = Program::where('is_active', true)
             ->orderBy('name')
             ->get()
             ->groupBy('category')
-            ->map(fn($items) => $items->map(fn($p) => [
+            ->map(fn ($items) => $items->map(fn ($p) => [
                 'id' => $p->id,
                 'code' => $p->code,
                 'name' => $p->name,
@@ -50,7 +52,7 @@ class IntakeController extends Controller
         $strands_list = Strand::where('is_active', true)
             ->orderBy('name')
             ->get()
-            ->map(fn($s) => [
+            ->map(fn ($s) => [
                 'id' => $s->id,
                 'code' => $s->code,
                 'name' => $s->name,
@@ -120,7 +122,6 @@ class IntakeController extends Controller
         $educations = $request->input('educations', []);
 
         foreach ($educations as $idx => $row) {
-
             $level = $row['level'] ?? null;
             $didGraduate = $row['did_graduate'] ?? null;
 
@@ -156,9 +157,10 @@ class IntakeController extends Controller
 
         DB::transaction(function () use ($request) {
 
-            $user = Auth::user();
+            /** @var \App\Models\User $user */ // ✅ helps Intelephense
+            $user = User::findOrFail(Auth::id()); // ✅ Eloquent, so forceFill() is recognized
 
-            // ✅ Server-side uppercase enforcement
+            // Server-side uppercase enforcement
             $firstName  = strtoupper(trim((string) $request->input('first_name')));
             $middleName = strtoupper(trim((string) $request->input('middle_name')));
             $lastName   = strtoupper(trim((string) $request->input('last_name')));
@@ -173,9 +175,7 @@ class IntakeController extends Controller
                 'last_name'   => $lastName,
                 'suffix'      => $suffix ?: null,
                 'name'        => trim(collect([$firstName, $middleName, $lastName, $suffix])->filter()->implode(' '))
-            ]);
-
-            $user->save();
+            ])->save();
 
             $alumnus = Alumnus::where('user_id', $user->id)->first();
 
@@ -184,7 +184,6 @@ class IntakeController extends Controller
                 'home_address','current_address','contact_number','email','facebook'
             ]);
 
-            // Enforce uppercase for relevant fields
             $data['nickname']        = isset($data['nickname']) ? strtoupper(trim((string)$data['nickname'])) : null;
             $data['home_address']    = isset($data['home_address']) ? strtoupper(trim((string)$data['home_address'])) : null;
             $data['current_address'] = isset($data['current_address']) ? strtoupper(trim((string)$data['current_address'])) : null;
@@ -205,7 +204,6 @@ class IntakeController extends Controller
                 $alumnus->update($data);
             }
 
-            // Existing logic preserved
             $alumnus->educations()->delete();
             $alumnus->employments()->delete();
             $alumnus->communityInvolvements()->delete();
@@ -276,7 +274,9 @@ class IntakeController extends Controller
             );
         });
 
-        $user = Auth::user();
+        /** @var \App\Models\User $user */ // ✅ Intelephense
+        $user = User::findOrFail(Auth::id());
+
         $alumnus = Alumnus::where('user_id', $user->id)->first();
 
         if ($alumnus && $this->intakeIsComplete($alumnus)) {
