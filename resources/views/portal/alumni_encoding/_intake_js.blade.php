@@ -1,4 +1,4 @@
-{{-- resources/views/user/_intake_js.blade.php --}}
+{{-- resources/views/alumni_encoding/_intake_js.blade.php --}}
 @include('user._intake_js')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
