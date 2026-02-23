@@ -37,7 +37,7 @@
     <div class="py-8">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 px-4 space-y-6">
 
-            {{-- Flash (same style as intake) --}}
+            {{-- Flash --}}
             @if(session('success'))
                 <div class="p-3 rounded border border-green-200 bg-green-50 text-green-800">
                     {{ session('success') }}
@@ -57,7 +57,7 @@
                 </div>
             @endif
 
-            {{-- Validation errors (same style as intake) --}}
+            {{-- Validation errors --}}
             @if ($errors->any())
                 <div class="p-4 rounded border border-red-200 bg-red-50 text-red-800">
                     <div class="font-semibold mb-2">Please fix the following:</div>
@@ -251,16 +251,21 @@
                 </div>
             @endif
 
-            {{-- Main intake form (same container style as intake page) --}}
+            {{-- Main intake form --}}
             <div class="bg-white border rounded-lg p-5">
                 <form method="POST" action="{{ route('portal.alumni_encoding.update', $alumnus) }}" novalidate>
                     @csrf
                     @method('PUT')
 
-                    {{-- shared form partial --}}
+                    {{-- ✅ IMPORTANT: the datalist options are rendered by user._intake_form (NOT _intake_js).
+                        So we must pass religions_list and nationalities_list into the include. --}}
                     @include('user._intake_form', [
                         'alumnus' => $alumnusLocal,
-                        'prefill_from_auth' => false
+                        'prefill_from_auth' => false,
+
+                        // ✅ these drive the <datalist> options in _intake_form
+                        'religions_list' => $religions_list ?? [],
+                        'nationalities_list' => $nationalities_list ?? [],
                     ])
 
                     <div class="mt-6 flex flex-wrap gap-2">
@@ -278,9 +283,13 @@
                 </form>
             </div>
 
-            {{-- ✅ Portal-only JS (must be after the partial so wrappers exist) --}}
-            {{-- IMPORTANT: this partial must ONLY include user._intake_js (no extra scripts) --}}
-            @include('portal.alumni_encoding._intake_js')
+            {{-- ✅ Dynamic sections JS (education/employment/community/age/etc.)
+                Use the SAME JS partial used by self-service to keep behavior identical. --}}
+            @include('user._intake_js', [
+                'alumnus' => $alumnusLocal,
+                'programs_by_cat' => $programs_by_cat ?? [],
+                'strands_list' => $strands_list ?? [],
+            ])
 
         </div>
     </div>

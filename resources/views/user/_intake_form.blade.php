@@ -30,12 +30,36 @@
     $last   = old('last_name',   $prefill_from_auth ? ($u?->last_name ?? '') : '');
     $suffix = old('suffix',      $prefill_from_auth ? ($u?->suffix ?? '') : '');
 
+    // fallback parse if only full name exists
     if ((!$first && !$last) && $fullNameValue) {
         $parts = preg_split('/\s+/', trim($fullNameValue));
-        $first = $parts[0] ?? '';
-        $last  = count($parts) > 1 ? $parts[count($parts)-1] : '';
+        $first  = $parts[0] ?? '';
+        $last   = count($parts) > 1 ? $parts[count($parts)-1] : '';
         $middle = count($parts) > 2 ? implode(' ', array_slice($parts, 1, -1)) : '';
     }
+
+    // Nationality + Religion lists (must be passed by controller)
+    $religions_list = $religions_list ?? [];
+    $nationalities_list = $nationalities_list ?? [];
+
+    // Normalize list values
+    $nationalities_upper = collect($nationalities_list)
+        ->map(fn($x) => strtoupper(trim((string)$x)))
+        ->filter()
+        ->unique()
+        ->values();
+
+    $hasFilipino = $nationalities_upper->contains('FILIPINO');
+    $nationalities_ordered = collect()
+        ->when($hasFilipino, fn($c) => $c->push('FILIPINO'))
+        ->merge($nationalities_upper->reject(fn($x) => $x === 'FILIPINO'))
+        ->values();
+
+    $religions_ordered = collect($religions_list)
+        ->map(fn($x) => strtoupper(trim((string)$x)))
+        ->filter()
+        ->unique()
+        ->values();
 @endphp
 
 <div class="bg-white shadow rounded p-6 space-y-8">
@@ -53,10 +77,11 @@
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium mb-1">Name</label>
 
-                {{-- ✅ 4 fields now (First, Middle, Last, Suffix) --}}
                 <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
                     <div>
-                        <label class="block text-xs text-gray-600 mb-1">First Name <span class="text-red-600">*</span></label>
+                        <label class="block text-xs text-gray-600 mb-1">
+                            First Name <span class="text-red-600">*</span>
+                        </label>
                         <input id="first_name" name="first_name"
                                class="w-full border rounded p-2"
                                value="{{ $first }}"
@@ -73,7 +98,9 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs text-gray-600 mb-1">Last Name <span class="text-red-600">*</span></label>
+                        <label class="block text-xs text-gray-600 mb-1">
+                            Last Name <span class="text-red-600">*</span>
+                        </label>
                         <input id="last_name" name="last_name"
                                class="w-full border rounded p-2"
                                value="{{ $last }}"
@@ -112,9 +139,9 @@
                 <label class="block text-sm font-medium">Sex</label>
                 <select name="sex" class="w-full border rounded p-2">
                     <option value="">--</option>
-                    <option value="male" {{ $sex==='male'?'selected':'' }}>Male</option>
-                    <option value="female" {{ $sex==='female'?'selected':'' }}>Female</option>
-                    <option value="prefer_not" {{ $sex==='prefer_not'?'selected':'' }}>Prefer not to say</option>
+                    <option value="male" {{ $sex==='male' ? 'selected' : '' }}>Male</option>
+                    <option value="female" {{ $sex==='female' ? 'selected' : '' }}>Female</option>
+                    <option value="prefer_not" {{ $sex==='prefer_not' ? 'selected' : '' }}>Prefer not to say</option>
                 </select>
             </div>
 
@@ -135,7 +162,6 @@
                         }
                     }
                 @endphp
-
                 <input type="date" name="birthdate" class="w-full border rounded p-2"
                        value="{{ $birthVal }}">
             </div>
@@ -154,10 +180,10 @@
                 <label class="block text-sm font-medium">Civil Status</label>
                 <select name="civil_status" class="w-full border rounded p-2">
                     <option value="">--</option>
-                    <option value="single" {{ $cs==='single'?'selected':'' }}>Single</option>
-                    <option value="married" {{ $cs==='married'?'selected':'' }}>Married</option>
-                    <option value="widowed" {{ $cs==='widowed'?'selected':'' }}>Widowed</option>
-                    <option value="separated" {{ $cs==='separated'?'selected':'' }}>Separated</option>
+                    <option value="single" {{ $cs==='single' ? 'selected' : '' }}>Single</option>
+                    <option value="married" {{ $cs==='married' ? 'selected' : '' }}>Married</option>
+                    <option value="widowed" {{ $cs==='widowed' ? 'selected' : '' }}>Widowed</option>
+                    <option value="separated" {{ $cs==='separated' ? 'selected' : '' }}>Separated</option>
                 </select>
             </div>
 
@@ -179,77 +205,66 @@
                        value="{{ old('facebook', $alumnus->facebook ?? '') }}">
             </div>
 
-            @php
-            // These lists are provided by IntakeController (Batch N3 Step 1)
-            $religions_list = $religions_list ?? [];
-            $nationalities_list = $nationalities_list ?? [];
+            {{-- Nationality (datalist) --}}
+            <div>
+                <label class="block text-sm font-medium">Nationality</label>
 
-            // Make sure FILIPINO is first in the datalist (case-insensitive)
-            $nationalities_upper = collect($nationalities_list)
-                ->map(fn($x) => strtoupper(trim((string)$x)))
-                ->filter()
-                ->unique()
-                ->values();
+                <div class="flex gap-2">
+                    <input
+                        id="nationality_input"
+                        name="nationality"
+                        list="nationalities_datalist"
+                        class="w-full border rounded p-2"
+                        placeholder="Type to search (e.g., FILIPINO)"
+                        value="{{ old('nationality', $alumnus->nationality ?? '') }}"
+                    >
+                   
+                </div>
 
-            $hasFilipino = $nationalities_upper->contains('FILIPINO');
-            $nationalities_ordered = collect()
-                ->when($hasFilipino, fn($c) => $c->push('FILIPINO'))
-                ->merge($nationalities_upper->reject(fn($x) => $x === 'FILIPINO'))
-                ->values();
-
-            $religions_ordered = collect($religions_list)
-                ->map(fn($x) => strtoupper(trim((string)$x)))
-                ->filter()
-                ->unique()
-                ->values();
-        @endphp
-
-        <div>
-            <label class="block text-sm font-medium">Nationality</label>
-            <input
-                name="nationality"
-                list="nationalities_datalist"
-                class="w-full border rounded p-2"
-                placeholder="Type to search (e.g., FILIPINO)"
-                value="{{ old('nationality', $alumnus->nationality ?? '') }}"
-            >
-            <div class="text-xs text-gray-500 mt-1">
-                Type to search from the list, or enter a new nationality if not available.
+                <div class="text-xs text-gray-500 mt-1">
+                    Type to search from the list, or enter a new nationality if not available.
+                </div>
             </div>
-        </div>
 
-        <div>
-            <label class="block text-sm font-medium">Religion</label>
-            <input
-                name="religion"
-                list="religions_datalist"
-                class="w-full border rounded p-2"
-                placeholder="Type to search (e.g., ROMAN CATHOLIC)"
-                value="{{ old('religion', $alumnus->religion ?? '') }}"
-            >
-            <div class="text-xs text-gray-500 mt-1">
-                Type to search from the list, or enter a new religion if not available.
+            {{-- Religion (datalist) --}}
+            <div>
+                <label class="block text-sm font-medium">Religion</label>
+
+                <div class="flex gap-2">
+                    <input
+                        id="religion_input"
+                        name="religion"
+                        list="religions_datalist"
+                        class="w-full border rounded p-2"
+                        placeholder="Type to search (e.g., ROMAN CATHOLIC)"
+                        value="{{ old('religion', $alumnus->religion ?? '') }}"
+                    >
+                   
+                </div>
+
+                <div class="text-xs text-gray-500 mt-1">
+                    Type to search from the list, or enter a new religion if not available.
+                </div>
             </div>
-        </div>
 
-        {{-- Suggestion lists (allows free typing too) --}}
-        <datalist id="nationalities_datalist">
-            @foreach($nationalities_ordered as $n)
-                <option value="{{ $n }}"></option>
-            @endforeach
-        </datalist>
+            {{-- Suggestion lists (allows free typing too) --}}
+            <datalist id="nationalities_datalist">
+                @foreach($nationalities_ordered as $n)
+                    <option value="{{ $n }}"></option>
+                @endforeach
+            </datalist>
 
-        <datalist id="religions_datalist">
-            @foreach($religions_ordered as $r)
-                <option value="{{ $r }}"></option>
-            @endforeach
-        </datalist>
+            <datalist id="religions_datalist">
+                @foreach($religions_ordered as $r)
+                    <option value="{{ $r }}"></option>
+                @endforeach
+            </datalist>
 
         </div>
     </section>
 
-        {{-- II. ADDRESSES --}}
-        <section id="addresses" class="scroll-mt-24">
+    {{-- II. ADDRESSES --}}
+    <section id="addresses" class="scroll-mt-24">
         <div class="flex items-center justify-between mb-3">
             <div class="text-lg font-semibold">II. Addresses</div>
             <a href="#addresses" class="text-xs text-gray-500 hover:text-gray-700">#</a>
@@ -258,15 +273,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium">Home Address</label>
-                <textarea
-                    id="home_address"
-                    name="home_address"
-                    class="w-full border rounded p-2"
-                    rows="2"
-                >{{ old('home_address', $alumnus->home_address ?? '') }}</textarea>
+                <textarea id="home_address" name="home_address"
+                          class="w-full border rounded p-2" rows="2">{{ old('home_address', $alumnus->home_address ?? '') }}</textarea>
             </div>
 
-            {{-- ✅ Option A: Current address same as home --}}
             <div class="md:col-span-2">
                 <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
                     <input type="checkbox" id="same_address" class="rounded border-gray-300">
@@ -276,16 +286,11 @@
 
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium">Current / Present Address</label>
-                <textarea
-                    id="current_address"
-                    name="current_address"
-                    class="w-full border rounded p-2"
-                    rows="2"
-                >{{ old('current_address', $alumnus->current_address ?? '') }}</textarea>
+                <textarea id="current_address" name="current_address"
+                          class="w-full border rounded p-2" rows="2">{{ old('current_address', $alumnus->current_address ?? '') }}</textarea>
             </div>
         </div>
     </section>
-
 
     {{-- III. ACADEMIC BACKGROUND --}}
     <section id="academic" class="scroll-mt-24">
@@ -400,12 +405,11 @@
     const first  = document.getElementById('first_name');
     const middle = document.getElementById('middle_name');
     const last   = document.getElementById('last_name');
-    const suffix = document.getElementById('suffix'); // optional input
+    const suffix = document.getElementById('suffix');
 
     const full    = document.getElementById('full_name');
     const preview = document.getElementById('full_name_preview');
 
-    // required elements
     if (!first || !last || !full || !preview) return;
 
     function build() {
@@ -421,15 +425,12 @@
         preview.textContent = v || '—';
     }
 
-    // bind input listeners
     [first, middle, last, suffix].forEach(el => {
         if (!el) return;
         el.addEventListener('input', build);
         el.addEventListener('change', build);
     });
 
-    // initial sync
     build();
 })();
 </script>
-

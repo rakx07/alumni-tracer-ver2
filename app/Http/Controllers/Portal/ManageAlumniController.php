@@ -160,16 +160,25 @@ public function edit(Alumnus $alumnus)
         ->toArray();
 
     // ✅ ADD THESE (same data that intake.blade.php likely receives)
-    $nationalities = \App\Models\Nationality::orderBy('name')->get();
-    $religions     = \App\Models\Religion::orderBy('name')->get();
+    $religions_list = \App\Models\Religion::where('is_active', true)
+    ->orderBy('name')
+    ->pluck('name')
+    ->values()
+    ->toArray();
 
+$nationalities_list = \App\Models\Nationality::where('is_active', true)
+    ->orderByRaw("CASE WHEN UPPER(name) = 'FILIPINO' THEN 0 ELSE 1 END")
+    ->orderBy('name')
+    ->pluck('name')
+    ->values()
+    ->toArray();
     return view('portal.records.edit', compact(
-        'alumnus',
-        'programs_by_cat',
-        'strands_list',
-        'nationalities',
-        'religions'
-    ));
+    'alumnus',
+    'programs_by_cat',
+    'strands_list',
+    'religions_list',
+    'nationalities_list'
+));
 }
 
 
