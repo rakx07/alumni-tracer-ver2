@@ -14,7 +14,7 @@
                 <h2 class="font-extrabold text-xl text-gray-900">Assisted Encoding</h2>
                 <p class="text-sm text-gray-600">
                     Status: <span class="font-medium">{{ $alumnus->record_status }}</span>
-                    • Linked User: <span class="font-medium">{{ $alumnus->user?->email ?? '—' }}</span>
+                    • Linked User: <span class="font-medium">{{ optional($alumnus->user)->email ?? '—' }}</span>
                 </p>
             </div>
 
@@ -76,7 +76,7 @@
                         <div class="font-semibold text-gray-900">Workflow</div>
                         <div class="text-xs text-gray-600 mt-1">
                             Validated by: {{ $alumnus->validated_by ?? '—' }}
-                            • {{ optional($alumnus->validated_at)?->format('M d, Y h:i A') ?? '—' }}
+                            • {{ optional($alumnus->validated_at)->format('M d, Y h:i A') ?? '—' }}
                         </div>
                     </div>
 
@@ -279,9 +279,8 @@
             </div>
 
             {{-- ✅ Portal-only JS (must be after the partial so wrappers exist) --}}
-            @include('portal.alumni_encoding._intake_js', [
-                'alumnus' => $alumnusLocal
-            ])
+            {{-- IMPORTANT: this partial must ONLY include user._intake_js (no extra scripts) --}}
+            @include('portal.alumni_encoding._intake_js')
 
         </div>
     </div>

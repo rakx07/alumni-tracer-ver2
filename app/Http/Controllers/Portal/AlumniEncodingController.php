@@ -11,6 +11,12 @@ use App\Models\AlumniCommunityInvolvement;
 use App\Models\AlumniEngagementPreference;
 use App\Models\AlumniConsent;
 use App\Models\User;
+
+use App\Models\Program;
+use App\Models\Strand;
+use App\Models\Religion;
+use App\Models\Nationality;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +31,10 @@ class AlumniEncodingController extends Controller
 
     private function isItAdmin(): bool
     {
-        return in_array(Auth::user()?->role, ['it_admin', 'admin'], true);
+        $user = Auth::user();
+        $role = $user ? $user->role : null;
+
+        return in_array($role, ['it_admin', 'admin'], true);
     }
 
     private function logAudit(Alumnus $alumnus, string $action, $old, $new): void
@@ -60,10 +69,10 @@ class AlumniEncodingController extends Controller
 
         if ($request->filled('search')) {
             $s = trim($request->search);
-            $q->where(fn ($w) =>
+            $q->where(function ($w) use ($s) {
                 $w->where('full_name', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%")
-            );
+                  ->orWhere('email', 'like', "%{$s}%");
+            });
         }
 
         return view('portal.alumni_encoding.index', [
@@ -115,10 +124,10 @@ class AlumniEncodingController extends Controller
             $user = null;
             $tempPassword = null;
 
-            /* ---------- MODE A ---------- */
+            /* ---------- MODE A: create login user now ---------- */
             if ($data['create_user'] === '1') {
 
-                if (!$data['user_email']) {
+                if (empty($data['user_email'])) {
                     return back()->withInput()->withErrors([
                         'user_email' => 'User email is required for Mode A.',
                     ]);
@@ -146,7 +155,7 @@ class AlumniEncodingController extends Controller
             }
 
             $alumnus = Alumnus::create([
-                'user_id'       => $user?->id,
+                'user_id'       => $user ? $user->id : null,
                 'full_name'     => $fullName,
                 'email'         => $data['email'],
                 'encoding_mode' => 'assisted',
@@ -168,27 +177,72 @@ class AlumniEncodingController extends Controller
      ============================================================ */
 
     public function edit(Alumnus $alumnus)
-{
-    // Officers can only edit assisted
-    if (!$this->isItAdmin()) {
-        abort_unless($alumnus->encoding_mode === 'assisted', 404);
-    }
+    {
+        if (!$this->isItAdmin()) {
+            abort_unless($alumnus->encoding_mode === 'assisted', 404);
+        }
 
-    $alumnus->load([
-        'user',
-        'educations',
-        'employments',
-        'communityInvolvements',
-        'engagementPreference',
-        'consent',
-    ]);
+        $alumnus->load([
+            'user',
+            'educations',
+            'employments',
+            'communityInvolvements',
+            'engagementPreference',
+            'consent',
+        ]);
 
-        return view('portal.alumni_encoding.edit', compact('alumnus'));
+        // Same datasets as self-service so assisted can reuse user/_intake_js.blade.php
+        $programs_by_cat = Program::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->groupBy('category')
+            ->map(function ($items) {
+                return $items->map(function ($p) {
+                    return [
+                        'id'   => $p->id,
+                        'code' => $p->code,
+                        'name' => $p->name,
+                    ];
+                });
+            })
+            ->toArray();
+
+        $strands_list = Strand::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id'   => $s->id,
+                    'code' => $s->code,
+                    'name' => $s->name,
+                ];
+            })
+            ->toArray();
+
+        $religions_list = Religion::where('is_active', true)
+            ->orderBy('name')
+            ->pluck('name')
+            ->values()
+            ->toArray();
+
+        $nationalities_list = Nationality::where('is_active', true)
+            ->orderByRaw("CASE WHEN UPPER(name) = 'FILIPINO' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->pluck('name')
+            ->values()
+            ->toArray();
+
+        return view('portal.alumni_encoding.edit', compact(
+            'alumnus',
+            'programs_by_cat',
+            'strands_list',
+            'religions_list',
+            'nationalities_list'
+        ));
     }
 
     public function update(Request $request, Alumnus $alumnus)
     {
-        // Officers can only update assisted
         if (!$this->isItAdmin()) {
             abort_unless($alumnus->encoding_mode === 'assisted', 404);
         }
@@ -211,23 +265,18 @@ class AlumniEncodingController extends Controller
                 'email','facebook','nationality','religion',
             ]));
 
-           AlumniEducation::where('alumnus_id', $alumnus->id)->delete();
+            AlumniEducation::where('alumnus_id', $alumnus->id)->delete();
 
             foreach ($request->input('educations', []) as $row) {
                 if (empty($row['level'])) continue;
 
-                // normalize Others
                 $programId = $row['program_id'] ?? null;
                 $specificProgram = trim((string)($row['specific_program'] ?? '')) ?: null;
 
                 if ($programId === '__other__') {
                     $programId = null;
-                } else {
-                    // if a real program is selected, you can keep specific_program (or null it)
-                    // choose one behavior; here we keep it as-is if user typed something
                 }
 
-                // normalize graduate fields
                 $didGraduate = $row['did_graduate'] ?? null;
                 $yearGraduated = $row['year_graduated'] ?? null;
                 $lastYearAttended = $row['last_year_attended'] ?? null;
@@ -239,12 +288,12 @@ class AlumniEncodingController extends Controller
                     'alumnus_id' => $alumnus->id,
                     'level'      => $row['level'],
 
-                    'did_graduate' => $didGraduate,
-                    'program_id'   => $programId,
+                    'did_graduate'     => $didGraduate,
+                    'program_id'       => $programId,
                     'specific_program' => $specificProgram,
 
-                    'strand_id'    => $row['strand_id'] ?? null,
-                    'strand_track' => $row['strand_track'] ?? null,
+                    'strand_id'         => $row['strand_id'] ?? null,
+                    'strand_track'      => $row['strand_track'] ?? null,
 
                     'student_number'     => $row['student_number'] ?? null,
                     'year_entered'       => $row['year_entered'] ?? null,
@@ -268,8 +317,6 @@ class AlumniEncodingController extends Controller
                 ]);
             }
 
-
-
             AlumniEmployment::where('alumnus_id', $alumnus->id)->delete();
             foreach ($request->input('employments', []) as $row) {
                 if (array_filter($row)) {
@@ -286,12 +333,12 @@ class AlumniEncodingController extends Controller
 
             AlumniEngagementPreference::updateOrCreate(
                 ['alumnus_id' => $alumnus->id],
-                (array)$request->input('engagement', [])
+                (array) $request->input('engagement', [])
             );
 
             AlumniConsent::updateOrCreate(
                 ['alumnus_id' => $alumnus->id],
-                (array)$request->input('consent', [])
+                (array) $request->input('consent', [])
             );
 
             $this->logAudit($alumnus, 'update', $old, $alumnus->fresh()->toArray());
@@ -299,7 +346,6 @@ class AlumniEncodingController extends Controller
             return back()->with('success', 'Saved (changes logged).');
         });
     }
-
 
     /* ============================================================
      | Link / Update User
@@ -318,6 +364,7 @@ class AlumniEncodingController extends Controller
 
         if (!$user) {
             $tempPassword = Str::random(10);
+
             $user = User::create([
                 'first_name' => $request->first_name,
                 'middle_name'=> $request->middle_name,
@@ -369,10 +416,12 @@ class AlumniEncodingController extends Controller
         return back()->with('success', 'User updated (logged).');
     }
 
+    /* ============================================================
+     | Validate assisted record
+     ============================================================ */
 
     public function validateRecord(Alumnus $alumnus)
     {
-        // Officers can only validate assisted; IT Admin can validate any
         if (!$this->isItAdmin()) {
             abort_unless($alumnus->encoding_mode === 'assisted', 404);
         }
@@ -385,9 +434,13 @@ class AlumniEncodingController extends Controller
             'validated_at'  => now(),
         ]);
 
-        $this->logAudit($alumnus, 'validate', $old, $alumnus->only(['record_status','validated_by','validated_at']));
+        $this->logAudit(
+            $alumnus,
+            'validate',
+            $old,
+            $alumnus->only(['record_status','validated_by','validated_at'])
+        );
 
         return back()->with('success', 'Record validated successfully.');
     }
-
 }
