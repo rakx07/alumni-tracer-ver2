@@ -176,10 +176,85 @@
         }
 
         .pager a, .pager span{ font-size: 13px; }
+
+        /* =========================
+           Mobile cards
+           ========================= */
+        .card-list{
+            display:grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .post-card{
+            border: 1px solid rgba(227,199,122,.55);
+            border-radius: 18px;
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(2,6,23,.06);
+            overflow: hidden;
+        }
+        .post-card-top{
+            padding: 14px 14px 12px 14px;
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap: 10px;
+            border-bottom: 1px solid rgba(15,23,42,.08);
+            background: rgba(255,251,240,.45);
+        }
+        .post-card-body{
+            padding: 14px;
+        }
+        .kv{
+            display:flex;
+            justify-content:space-between;
+            gap: 12px;
+            padding: 8px 0;
+            border-top: 1px dashed rgba(15,23,42,.12);
+        }
+        .kv:first-of-type{ border-top: 0; }
+        .k{
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .35px;
+            text-transform: uppercase;
+            color: rgba(15,23,42,.55);
+        }
+        .v{
+            text-align:right;
+            font-weight: 800;
+            color:#0f172a;
+            font-size: 13px;
+        }
+        .card-actions{
+            display:flex;
+            flex-wrap:wrap;
+            gap: 10px;
+            padding: 12px 14px 14px 14px;
+            border-top: 1px solid rgba(15,23,42,.08);
+            background: #fff;
+        }
+        .btn-mini{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 900;
+            border: 1px solid rgba(15,23,42,.12);
+            background: var(--paper);
+            color: var(--ndmu-green);
+        }
+        .btn-mini:hover{ filter: brightness(.98); }
+        .btn-danger{
+            border-color: rgba(185,28,28,.25);
+            color:#b91c1c;
+            background: rgba(185,28,28,.06);
+        }
     </style>
 
     <div class="py-10" style="background:var(--page);">
-        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 px-4 sm:px-6 lg:px-8 space-y-6">
 
             @if(session('success'))
                 <div class="rounded-xl border p-4"
@@ -208,11 +283,11 @@
                 </div>
 
                 <div class="p-6">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <a href="{{ route('portal.careers.admin.create') }}" class="btn-ndmu btn-primary">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <a href="{{ route('portal.careers.admin.create') }}" class="btn-ndmu btn-primary w-full sm:w-auto">
                             + New Job Post
                         </a>
-                        <a href="{{ route('careers.index') }}" class="btn-ndmu btn-outline">
+                        <a href="{{ route('careers.index') }}" class="btn-ndmu btn-outline w-full sm:w-auto">
                             View Public Careers
                         </a>
                     </div>
@@ -236,8 +311,96 @@
                 </div>
             </div>
 
-            {{-- Table --}}
-            <div class="table-wrap">
+            {{-- =========================
+               MOBILE (Cards)
+               ========================= --}}
+            <div class="md:hidden">
+                <div class="card-list">
+                    @forelse($posts as $post)
+                        @php
+                            $status = $post->statusLabel();
+                            $badgeClass = $status === 'Active'
+                                ? 'badge-active'
+                                : ($status === 'Upcoming'
+                                    ? 'badge-upcoming'
+                                    : ($status === 'Expired'
+                                        ? 'badge-expired'
+                                        : 'badge-hidden'));
+                            $dotColor = $status === 'Active'
+                                ? 'background:#10b981;'
+                                : ($status === 'Upcoming'
+                                    ? 'background:#3b82f6;'
+                                    : ($status === 'Expired'
+                                        ? 'background:#6b7280;'
+                                        : 'background:#eab308;'));
+                        @endphp
+
+                        <div class="post-card">
+                            <div class="post-card-top">
+                                <div class="min-w-0">
+                                    <div class="title truncate">{{ $post->title }}</div>
+                                    <div class="meta">
+                                        {{ $post->employment_type ?: '—' }} • {{ $post->location ?: '—' }}
+                                    </div>
+                                </div>
+
+                                <span class="status-badge {{ $badgeClass }}">
+                                    <span class="dot" style="{{ $dotColor }}"></span>
+                                    {{ $status }}
+                                </span>
+                            </div>
+
+                            <div class="post-card-body">
+                                <div class="kv">
+                                    <div class="k">Company</div>
+                                    <div class="v">{{ $post->company ?: '—' }}</div>
+                                </div>
+                                <div class="kv">
+                                    <div class="k">Start</div>
+                                    <div class="v">{{ $post->start_date ? $post->start_date->format('M d, Y') : '—' }}</div>
+                                </div>
+                                <div class="kv">
+                                    <div class="k">End</div>
+                                    <div class="v">{{ $post->end_date ? $post->end_date->format('M d, Y') : '—' }}</div>
+                                </div>
+                                <div class="kv">
+                                    <div class="k">Files</div>
+                                    <div class="v">{{ $post->attachments_count }} attachment(s)</div>
+                                </div>
+                            </div>
+
+                            <div class="card-actions">
+                                <a href="{{ route('portal.careers.admin.edit', $post) }}" class="btn-mini">
+                                    Edit
+                                </a>
+
+                                <form action="{{ route('portal.careers.admin.destroy', $post) }}"
+                                      method="POST"
+                                      onsubmit="return confirm('Delete this post? This will remove its attachments too.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-mini btn-danger">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="post-card">
+                            <div class="post-card-body">
+                                <div class="text-sm text-gray-600 font-semibold text-center">
+                                    No career posts yet.
+                                </div>
+                            </div>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            {{-- =========================
+               DESKTOP (Table)
+               ========================= --}}
+            <div class="table-wrap hidden md:block">
                 <div class="overflow-x-auto">
                     <table class="min-w-full">
                         <thead>
