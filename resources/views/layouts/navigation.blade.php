@@ -10,7 +10,7 @@
             <div class="flex items-center gap-8">
                 {{-- Brand --}}
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ url('/') }}" class="flex items-center gap-3 group">
+                    <a href="{{ auth()->check() ? route('dashboard') : url('/') }}" class="flex items-center gap-3 group">
                         <img
                             src="{{ asset('images/ndmu-logo.png') }}"
                             alt="NDMU"
