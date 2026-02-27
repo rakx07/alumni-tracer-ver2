@@ -113,6 +113,7 @@ class AlumniEncodingController extends Controller
             'user_email'  => ['nullable','email','max:255'],
         ]);
 
+
         return DB::transaction(function () use ($data) {
 
             $fullName = $this->buildFullName(
@@ -241,111 +242,204 @@ class AlumniEncodingController extends Controller
         ));
     }
 
-    public function update(Request $request, Alumnus $alumnus)
-    {
-        if (!$this->isItAdmin()) {
-            abort_unless($alumnus->encoding_mode === 'assisted', 404);
-        }
+        public function update(Request $request, Alumnus $alumnus)
+        {
+            if (!$this->isItAdmin()) {
+                abort_unless($alumnus->encoding_mode === 'assisted', 404);
+            }
 
-        $old = $alumnus->load([
-            'educations','employments','communityInvolvements',
-            'engagementPreference','consent'
-        ])->toArray();
+            $old = $alumnus->load([
+                'educations','employments','communityInvolvements',
+                'engagementPreference','consent'
+            ])->toArray();
 
-        $request->validate([
-            'full_name' => ['required','string','max:255'],
-            'email'     => ['nullable','email'],
-        ]);
+            $request->validate([
+                'full_name' => ['required','string','max:255'],
+                'email'     => ['nullable','email'],
 
-        return DB::transaction(function () use ($request, $alumnus, $old) {
+                // ✅ Maiden fields (optional)
+                'maiden_first_name'  => ['nullable','string','max:100'],
+                'maiden_middle_name' => ['nullable','string','max:100'],
+                'maiden_last_name'   => ['nullable','string','max:100'],
+            ]);
 
-            $alumnus->update($request->only([
-                'full_name','nickname','sex','birthdate','age','civil_status',
-                'home_address','current_address','contact_number',
-                'email','facebook','nationality','religion',
-            ]));
+            return DB::transaction(function () use ($request, $alumnus, $old) {
 
-            AlumniEducation::where('alumnus_id', $alumnus->id)->delete();
+                /* ============================================================
+                | Server-side UPPERCASE normalization (same spirit as IntakeController)
+                ============================================================ */
 
-            foreach ($request->input('educations', []) as $row) {
-                if (empty($row['level'])) continue;
+                $nickname = strtoupper(trim((string) $request->input('nickname', '')));
+                $home     = strtoupper(trim((string) $request->input('home_address', '')));
+                $current  = strtoupper(trim((string) $request->input('current_address', '')));
 
-                $programId = $row['program_id'] ?? null;
-                $specificProgram = trim((string)($row['specific_program'] ?? '')) ?: null;
+                $nationality = strtoupper(trim((string) $request->input('nationality', '')));
+                $religion    = strtoupper(trim((string) $request->input('religion', '')));
 
-                if ($programId === '__other__') {
-                    $programId = null;
-                }
+                $maidenFirst  = strtoupper(trim((string) $request->input('maiden_first_name', '')));
+                $maidenMiddle = strtoupper(trim((string) $request->input('maiden_middle_name', '')));
+                $maidenLast   = strtoupper(trim((string) $request->input('maiden_last_name', '')));
 
-                $didGraduate = $row['did_graduate'] ?? null;
-                $yearGraduated = $row['year_graduated'] ?? null;
-                $lastYearAttended = $row['last_year_attended'] ?? null;
+                // normalize empty strings -> null for nullable fields
+                $nickname     = $nickname ?: null;
+                $home         = $home ?: null;
+                $current      = $current ?: null;
 
-                if ($didGraduate === '1' || $didGraduate === 1) $lastYearAttended = null;
-                if ($didGraduate === '0' || $didGraduate === 0) $yearGraduated = null;
+                $nationality  = $nationality ?: null;
+                $religion     = $religion ?: null;
 
-                AlumniEducation::create([
-                    'alumnus_id' => $alumnus->id,
-                    'level'      => $row['level'],
+                $maidenFirst  = $maidenFirst ?: null;
+                $maidenMiddle = $maidenMiddle ?: null;
+                $maidenLast   = $maidenLast ?: null;
 
-                    'did_graduate'     => $didGraduate,
-                    'program_id'       => $programId,
-                    'specific_program' => $specificProgram,
+                /* ============================================================
+                | Update main alumnus fields (includes maiden)
+                ============================================================ */
 
-                    'strand_id'         => $row['strand_id'] ?? null,
-                    'strand_track'      => $row['strand_track'] ?? null,
+                $alumnus->update([
+                    'full_name'       => $request->input('full_name'),
+                    'sex'             => $request->input('sex'),
+                    'birthdate'       => $request->input('birthdate'),
+                    'age'             => $request->input('age'),
+                    'civil_status'    => $request->input('civil_status'),
+                    'contact_number'  => $request->input('contact_number'),
+                    'email'           => $request->input('email'),
+                    'facebook'        => $request->input('facebook'),
 
-                    'student_number'     => $row['student_number'] ?? null,
-                    'year_entered'       => $row['year_entered'] ?? null,
-                    'year_graduated'     => $yearGraduated,
-                    'last_year_attended' => $lastYearAttended,
+                    // ✅ normalized uppercase fields
+                    'nickname'        => $nickname,
+                    'home_address'    => $home,
+                    'current_address' => $current,
+                    'nationality'     => $nationality,
+                    'religion'        => $religion,
 
-                    'degree_program' => $row['degree_program'] ?? null,
-                    'research_title' => $row['research_title'] ?? null,
-                    'thesis_title'   => $row['thesis_title'] ?? null,
-
-                    'honors_awards'              => $row['honors_awards'] ?? null,
-                    'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
-                    'clubs_organizations'        => $row['clubs_organizations'] ?? null,
-
-                    'institution_name'    => $row['institution_name'] ?? null,
-                    'institution_address' => $row['institution_address'] ?? null,
-                    'course_degree'       => $row['course_degree'] ?? null,
-                    'year_completed'      => $row['year_completed'] ?? null,
-                    'scholarship_award'   => $row['scholarship_award'] ?? null,
-                    'notes'               => $row['notes'] ?? null,
+                    // ✅ normalized maiden fields
+                    'maiden_first_name'  => $maidenFirst,
+                    'maiden_middle_name' => $maidenMiddle,
+                    'maiden_last_name'   => $maidenLast,
                 ]);
-            }
 
-            AlumniEmployment::where('alumnus_id', $alumnus->id)->delete();
-            foreach ($request->input('employments', []) as $row) {
-                if (array_filter($row)) {
-                    AlumniEmployment::create($row + ['alumnus_id' => $alumnus->id]);
+                /* =========================
+                Education
+                ========================= */
+                AlumniEducation::where('alumnus_id', $alumnus->id)->delete();
+
+                foreach ($request->input('educations', []) as $row) {
+                    if (empty($row['level'])) continue;
+
+                    $programId = $row['program_id'] ?? null;
+                    $specificProgram = trim((string)($row['specific_program'] ?? '')) ?: null;
+
+                    if ($programId === '__other__') {
+                        $programId = null;
+                    }
+
+                    $didGraduate = $row['did_graduate'] ?? null;
+                    $yearGraduated = $row['year_graduated'] ?? null;
+                    $lastYearAttended = $row['last_year_attended'] ?? null;
+
+                    if ($didGraduate === '1' || $didGraduate === 1) $lastYearAttended = null;
+                    if ($didGraduate === '0' || $didGraduate === 0) $yearGraduated = null;
+
+                    AlumniEducation::create([
+                        'alumnus_id' => $alumnus->id,
+                        'level'      => $row['level'],
+
+                        'did_graduate'     => $didGraduate,
+                        'program_id'       => $programId,
+                        'specific_program' => $specificProgram,
+
+                        'strand_id'         => $row['strand_id'] ?? null,
+                        'strand_track'      => $row['strand_track'] ?? null,
+
+                        'student_number'     => $row['student_number'] ?? null,
+                        'year_entered'       => $row['year_entered'] ?? null,
+                        'year_graduated'     => $yearGraduated,
+                        'last_year_attended' => $lastYearAttended,
+
+                        'degree_program' => $row['degree_program'] ?? null,
+                        'research_title' => $row['research_title'] ?? null,
+                        'thesis_title'   => $row['thesis_title'] ?? null,
+
+                        'honors_awards'              => $row['honors_awards'] ?? null,
+                        'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
+                        'clubs_organizations'        => $row['clubs_organizations'] ?? null,
+
+                        'institution_name'    => $row['institution_name'] ?? null,
+                        'institution_address' => $row['institution_address'] ?? null,
+                        'course_degree'       => $row['course_degree'] ?? null,
+                        'year_completed'      => $row['year_completed'] ?? null,
+                        'scholarship_award'   => $row['scholarship_award'] ?? null,
+                        'notes'               => $row['notes'] ?? null,
+                    ]);
                 }
-            }
 
-            AlumniCommunityInvolvement::where('alumnus_id', $alumnus->id)->delete();
-            foreach ($request->input('community', []) as $row) {
-                if (array_filter($row)) {
-                    AlumniCommunityInvolvement::create($row + ['alumnus_id' => $alumnus->id]);
+                /* =========================
+                Employment
+                ========================= */
+                AlumniEmployment::where('alumnus_id', $alumnus->id)->delete();
+                foreach ($request->input('employments', []) as $row) {
+                    if (array_filter($row)) {
+                        AlumniEmployment::create($row + ['alumnus_id' => $alumnus->id]);
+                    }
                 }
-            }
 
-            AlumniEngagementPreference::updateOrCreate(
-                ['alumnus_id' => $alumnus->id],
-                (array) $request->input('engagement', [])
-            );
+                /* =========================
+                Community
+                ========================= */
+                AlumniCommunityInvolvement::where('alumnus_id', $alumnus->id)->delete();
+                foreach ($request->input('community', []) as $row) {
+                    if (array_filter($row)) {
+                        AlumniCommunityInvolvement::create($row + ['alumnus_id' => $alumnus->id]);
+                    }
+                }
 
-            AlumniConsent::updateOrCreate(
-                ['alumnus_id' => $alumnus->id],
-                (array) $request->input('consent', [])
-            );
+                /* =========================
+                Engagement + Consent
+                ========================= */
+                AlumniEngagementPreference::updateOrCreate(
+                    ['alumnus_id' => $alumnus->id],
+                    (array) $request->input('engagement', [])
+                );
 
-            $this->logAudit($alumnus, 'update', $old, $alumnus->fresh()->toArray());
+                AlumniConsent::updateOrCreate(
+                    ['alumnus_id' => $alumnus->id],
+                    (array) $request->input('consent', [])
+                );
 
-            return back()->with('success', 'Saved (changes logged).');
-        });
-    }
+                /* =========================
+                Audit
+                ========================= */
+                $this->logAudit($alumnus, 'update', $old, $alumnus->fresh()->toArray());
+
+                /* =========================
+                Maiden advisory note (info)
+                ========================= */
+                $needsMaidenHint = false;
+
+                $sexNow = strtolower((string)($alumnus->sex ?? ''));
+                $csNow  = strtolower((string)($alumnus->civil_status ?? ''));
+
+                if ($sexNow === 'female' && in_array($csNow, ['married','widowed'], true)) {
+                    $mf = trim((string)($alumnus->maiden_first_name ?? ''));
+                    $ml = trim((string)($alumnus->maiden_last_name ?? ''));
+                    if ($mf === '' || $ml === '') {
+                        $needsMaidenHint = true;
+                    }
+                }
+
+                $redirect = back()->with('success', 'Saved (changes logged).');
+
+                if ($needsMaidenHint) {
+                    $redirect = $redirect->with(
+                        'info',
+                        'Note: Since you selected Female + Married/Widowed, adding the Maiden Name can help the Alumni Officer find and match records faster (especially for Alumni ID requests and verification).'
+                    );
+                }
+
+                return $redirect;
+            });
+        }
 
     /* ============================================================
      | Link / Update User

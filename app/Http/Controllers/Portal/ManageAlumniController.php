@@ -186,116 +186,164 @@ $nationalities_list = \App\Models\Nationality::where('is_active', true)
     /* =========================
      * UPDATE
      * ========================= */
-    public function update(Request $request, Alumnus $alumnus)
-    {
-        $request->validate([
-            'email' => ['nullable', 'email', 'max:255'],
-        ]);
+        public function update(Request $request, Alumnus $alumnus)
+        {
 
-        $alumnus->update($request->only([
-            'full_name','nickname','sex','birthdate','age','civil_status',
-            'home_address','current_address','contact_number','email','facebook',
-            'nationality','religion'
-        ]));
+            $request->validate([
+                'email' => ['nullable', 'email', 'max:255'],
 
-        $alumnus->educations()->delete();
-        $alumnus->employments()->delete();
-        $alumnus->communityInvolvements()->delete();
+                // ✅ Maiden fields (optional)
+                'maiden_first_name'  => ['nullable','string','max:100'],
+                'maiden_middle_name' => ['nullable','string','max:100'],
+                'maiden_last_name'   => ['nullable','string','max:100'],
+            ]);
 
-        foreach ($request->input('educations', []) as $row) {
-    if (empty($row['level'])) continue;
+            /* ============================================================
+            | Server-side UPPERCASE normalization (same as other modules)
+            ============================================================ */
+            $nickname = strtoupper(trim((string) $request->input('nickname', '')));
+            $home     = strtoupper(trim((string) $request->input('home_address', '')));
+            $current  = strtoupper(trim((string) $request->input('current_address', '')));
 
-    // Normalize Others
-    if (($row['program_id'] ?? null) === '__other__') {
-        $row['program_id'] = null;
-        $row['specific_program'] = trim((string)($row['specific_program'] ?? '')) ?: null;
-    } else {
-        // If program selected, wipe specific_program
-        $row['specific_program'] = null;
-    }
+            $nationality = strtoupper(trim((string) $request->input('nationality', '')));
+            $religion    = strtoupper(trim((string) $request->input('religion', '')));
 
-    // Normalize graduate year logic
-    if (($row['did_graduate'] ?? null) === '1' || ($row['did_graduate'] ?? null) === 1) {
-        $row['last_year_attended'] = null;
-    }
-    if (($row['did_graduate'] ?? null) === '0' || ($row['did_graduate'] ?? null) === 0) {
-        $row['year_graduated'] = null;
-    }
+            $maidenFirst  = strtoupper(trim((string) $request->input('maiden_first_name', '')));
+            $maidenMiddle = strtoupper(trim((string) $request->input('maiden_middle_name', '')));
+            $maidenLast   = strtoupper(trim((string) $request->input('maiden_last_name', '')));
 
-    $alumnus->educations()->create([
-    'level' => $row['level'],
+            // normalize empty strings to null
+            $nickname     = $nickname ?: null;
+            $home         = $home ?: null;
+            $current      = $current ?: null;
 
-    'did_graduate' => $row['did_graduate'] ?? null,
-    'program_id'   => $row['program_id'] ?? null,
-    'specific_program' => $row['specific_program'] ?? null,
+            $nationality  = $nationality ?: null;
+            $religion     = $religion ?: null;
 
-    'strand_id'    => $row['strand_id'] ?? null,
-    'strand_track' => $row['strand_track'] ?? null,
+            $maidenFirst  = $maidenFirst ?: null;
+            $maidenMiddle = $maidenMiddle ?: null;
+            $maidenLast   = $maidenLast ?: null;
 
-    'student_number'     => $row['student_number'] ?? null,
-    'year_entered'       => $row['year_entered'] ?? null,
-    'year_graduated'     => $row['year_graduated'] ?? null,
-    'last_year_attended' => $row['last_year_attended'] ?? null,
+            // ✅ Update alumnus (now includes maiden)
+            $alumnus->update([
+                'full_name'       => $request->input('full_name'),
+                'sex'             => $request->input('sex'),
+                'birthdate'       => $request->input('birthdate'),
+                'age'             => $request->input('age'),
+                'civil_status'    => $request->input('civil_status'),
+                'contact_number'  => $request->input('contact_number'),
+                'email'           => $request->input('email'),
+                'facebook'        => $request->input('facebook'),
 
-    'degree_program' => $row['degree_program'] ?? null,
-    'research_title' => $row['research_title'] ?? null,
-    'thesis_title'   => $row['thesis_title'] ?? null,
+                // normalized uppercase fields
+                'nickname'        => $nickname,
+                'home_address'    => $home,
+                'current_address' => $current,
+                'nationality'     => $nationality,
+                'religion'        => $religion,
 
-    'honors_awards'              => $row['honors_awards'] ?? null,
-    'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
-    'clubs_organizations'        => $row['clubs_organizations'] ?? null,
+                // ✅ maiden fields (uppercase)
+                'maiden_first_name'  => $maidenFirst,
+                'maiden_middle_name' => $maidenMiddle,
+                'maiden_last_name'   => $maidenLast,
+            ]);
 
-    'institution_name'    => $row['institution_name'] ?? null,
-    'institution_address' => $row['institution_address'] ?? null,
-    'course_degree'       => $row['course_degree'] ?? null,
-    'year_completed'      => $row['year_completed'] ?? null,
-    'scholarship_award'   => $row['scholarship_award'] ?? null,
-    'notes'               => $row['notes'] ?? null,
-]);
+            // wipe and recreate child rows
+            $alumnus->educations()->delete();
+            $alumnus->employments()->delete();
+            $alumnus->communityInvolvements()->delete();
 
-}
+            foreach ($request->input('educations', []) as $row) {
+                if (empty($row['level'])) continue;
 
+                // Normalize Others
+                if (($row['program_id'] ?? null) === '__other__') {
+                    $row['program_id'] = null;
+                    $row['specific_program'] = trim((string)($row['specific_program'] ?? '')) ?: null;
+                } else {
+                    $row['specific_program'] = null;
+                }
 
-        foreach ($request->input('employments', []) as $row) {
-            $hasAny = collect($row)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
-            if (!$hasAny) continue;
-            $alumnus->employments()->create($row);
+                // Normalize graduate year logic
+                if (($row['did_graduate'] ?? null) === '1' || ($row['did_graduate'] ?? null) === 1) {
+                    $row['last_year_attended'] = null;
+                }
+                if (($row['did_graduate'] ?? null) === '0' || ($row['did_graduate'] ?? null) === 0) {
+                    $row['year_graduated'] = null;
+                }
+
+                $alumnus->educations()->create([
+                    'level' => $row['level'],
+
+                    'did_graduate' => $row['did_graduate'] ?? null,
+                    'program_id'   => $row['program_id'] ?? null,
+                    'specific_program' => $row['specific_program'] ?? null,
+
+                    'strand_id'    => $row['strand_id'] ?? null,
+                    'strand_track' => $row['strand_track'] ?? null,
+
+                    'student_number'     => $row['student_number'] ?? null,
+                    'year_entered'       => $row['year_entered'] ?? null,
+                    'year_graduated'     => $row['year_graduated'] ?? null,
+                    'last_year_attended' => $row['last_year_attended'] ?? null,
+
+                    'degree_program' => $row['degree_program'] ?? null,
+                    'research_title' => $row['research_title'] ?? null,
+                    'thesis_title'   => $row['thesis_title'] ?? null,
+
+                    'honors_awards'              => $row['honors_awards'] ?? null,
+                    'extracurricular_activities' => $row['extracurricular_activities'] ?? null,
+                    'clubs_organizations'        => $row['clubs_organizations'] ?? null,
+
+                    'institution_name'    => $row['institution_name'] ?? null,
+                    'institution_address' => $row['institution_address'] ?? null,
+                    'course_degree'       => $row['course_degree'] ?? null,
+                    'year_completed'      => $row['year_completed'] ?? null,
+                    'scholarship_award'   => $row['scholarship_award'] ?? null,
+                    'notes'               => $row['notes'] ?? null,
+                ]);
+            }
+
+            foreach ($request->input('employments', []) as $row) {
+                $hasAny = collect($row)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
+                if (!$hasAny) continue;
+                $alumnus->employments()->create($row);
+            }
+
+            foreach ($request->input('community', []) as $row) {
+                if (empty($row['organization'])) continue;
+                $alumnus->communityInvolvements()->create($row);
+            }
+
+            $pref = $request->input('engagement', []);
+            $alumnus->engagementPreference()->updateOrCreate(
+                ['alumnus_id' => $alumnus->id],
+                [
+                    'willing_contacted'   => !empty($pref['willing_contacted']),
+                    'willing_events'      => !empty($pref['willing_events']),
+                    'willing_mentor'      => !empty($pref['willing_mentor']),
+                    'willing_donation'    => !empty($pref['willing_donation']),
+                    'willing_scholarship' => !empty($pref['willing_scholarship']),
+                    'prefer_email'        => !empty($pref['prefer_email']),
+                    'prefer_sms'          => !empty($pref['prefer_sms']),
+                    'prefer_facebook'     => !empty($pref['prefer_facebook']),
+                ]
+            );
+
+            $consent = $request->input('consent', []);
+            $alumnus->consent()->updateOrCreate(
+                ['alumnus_id' => $alumnus->id],
+                [
+                    'signature_name' => $consent['signature_name'] ?? null,
+                    'consented_at'   => !empty($consent['signature_name']) ? now() : null,
+                    'ip_address'     => $request->ip(),
+                ]
+            );
+
+            return redirect()
+                ->route('portal.records.edit', $alumnus)
+                ->with('success', 'Record updated.');
         }
-
-        foreach ($request->input('community', []) as $row) {
-            if (empty($row['organization'])) continue;
-            $alumnus->communityInvolvements()->create($row);
-        }
-
-        $pref = $request->input('engagement', []);
-        $alumnus->engagementPreference()->updateOrCreate(
-            ['alumnus_id' => $alumnus->id],
-            [
-                'willing_contacted'   => !empty($pref['willing_contacted']),
-                'willing_events'      => !empty($pref['willing_events']),
-                'willing_mentor'      => !empty($pref['willing_mentor']),
-                'willing_donation'    => !empty($pref['willing_donation']),
-                'willing_scholarship' => !empty($pref['willing_scholarship']),
-                'prefer_email'        => !empty($pref['prefer_email']),
-                'prefer_sms'          => !empty($pref['prefer_sms']),
-                'prefer_facebook'     => !empty($pref['prefer_facebook']),
-            ]
-        );
-
-        $consent = $request->input('consent', []);
-        $alumnus->consent()->updateOrCreate(
-            ['alumnus_id' => $alumnus->id],
-            [
-                'signature_name' => $consent['signature_name'] ?? null,
-                'consented_at'   => !empty($consent['signature_name']) ? now() : null,
-                'ip_address'     => $request->ip(),
-            ]
-        );
-
-        return redirect()
-            ->route('portal.records.edit', $alumnus)
-            ->with('success', 'Record updated.');
-    }
 
     /* =========================
      * DELETE

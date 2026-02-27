@@ -12,26 +12,32 @@ class Alumnus extends Model
     protected $table = 'alumni';
 
     protected $fillable = [
-        'user_id',
-        'full_name',
-        'nickname',
-        'sex',
-        'birthdate',
-        'age',
-        'civil_status',
-        'home_address',
-        'current_address',
-        'contact_number',
-        'email',
-        'facebook',
-        'nationality',
-        'religion',
-        'encoded_by',
-        'encoding_mode',
-        'record_status',
-        'validated_by',
-        'validated_at',
-    ];
+    'user_id',
+    'full_name',
+
+    // ✅ Maiden name fields
+    'maiden_first_name',
+    'maiden_middle_name',
+    'maiden_last_name',
+
+    'nickname',
+    'sex',
+    'birthdate',
+    'age',
+    'civil_status',
+    'home_address',
+    'current_address',
+    'contact_number',
+    'email',
+    'facebook',
+    'nationality',
+    'religion',
+    'encoded_by',
+    'encoding_mode',
+    'record_status',
+    'validated_by',
+    'validated_at',
+];
 
     public function user()
     {

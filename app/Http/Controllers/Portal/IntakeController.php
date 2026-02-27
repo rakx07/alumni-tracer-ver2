@@ -117,6 +117,9 @@ class IntakeController extends Controller
             'email'       => ['nullable','email','max:255'],
             'educations'  => ['nullable','array'],
             'educations.*.level' => ['required_with:educations','string'],
+            'maiden_first_name'  => ['nullable','string','max:100'],
+            'maiden_middle_name' => ['nullable','string','max:100'],
+            'maiden_last_name'   => ['nullable','string','max:100'],
         ]);
 
         $educations = $request->input('educations', []);
@@ -181,7 +184,8 @@ class IntakeController extends Controller
 
             $data = $request->only([
                 'nickname','sex','birthdate','age','civil_status',
-                'home_address','current_address','contact_number','email','facebook'
+                'home_address','current_address','contact_number','email','facebook',
+                'maiden_first_name','maiden_middle_name','maiden_last_name',
             ]);
 
             $data['nickname']        = isset($data['nickname']) ? strtoupper(trim((string)$data['nickname'])) : null;
@@ -189,6 +193,19 @@ class IntakeController extends Controller
             $data['current_address'] = isset($data['current_address']) ? strtoupper(trim((string)$data['current_address'])) : null;
             $data['nationality']     = $nationality ?: null;
             $data['religion']        = $religion ?: null;
+            $data['maiden_first_name']  = isset($data['maiden_first_name'])
+                ? strtoupper(trim((string)$data['maiden_first_name'])) : null;
+
+            $data['maiden_middle_name'] = isset($data['maiden_middle_name'])
+                ? strtoupper(trim((string)$data['maiden_middle_name'])) : null;
+
+            $data['maiden_last_name']   = isset($data['maiden_last_name'])
+                ? strtoupper(trim((string)$data['maiden_last_name'])) : null;
+
+            // normalize empty strings to null
+            $data['maiden_first_name']  = $data['maiden_first_name']  ?: null;
+            $data['maiden_middle_name'] = $data['maiden_middle_name'] ?: null;
+            $data['maiden_last_name']   = $data['maiden_last_name']   ?: null;
 
             $data['user_id'] = $user->id;
             $data['full_name'] = $this->buildFullNameFromUser($user);
@@ -278,20 +295,55 @@ class IntakeController extends Controller
         $user = User::findOrFail(Auth::id());
 
         $alumnus = Alumnus::where('user_id', $user->id)->first();
+        /* =========================
+        Maiden Hint Check
+        ========================= */
+        $needsMaidenHint = false;
+
+        if ($alumnus) {
+            $sex = strtolower((string)($alumnus->sex ?? ''));
+            $cs  = strtolower((string)($alumnus->civil_status ?? ''));
+
+            if ($sex === 'female' && in_array($cs, ['married','widowed'], true)) {
+                $mf = trim((string)($alumnus->maiden_first_name ?? ''));
+                $ml = trim((string)($alumnus->maiden_last_name ?? ''));
+
+                if ($mf === '' || $ml === '') {
+                    $needsMaidenHint = true;
+                }
+            }
+        }
+        /* ========================= */
 
         if ($alumnus && $this->intakeIsComplete($alumnus)) {
+
             if (empty($user->intake_completed_at)) {
                 $user->forceFill(['intake_completed_at' => now()])->save();
             }
 
-            return redirect()->route('intake.form')
+            $redirect = redirect()->route('intake.form')
                 ->with('success', 'Intake completed successfully! You may now proceed to the Dashboard.');
+
+            if ($needsMaidenHint) {
+                $redirect = $redirect->with('info', 'Note: Since you selected Female + Married/Widowed, adding your Maiden Name can help the Alumni Officer find and match your records faster (especially for Alumni ID requests and verification).');
+            }
+
+            return $redirect;
         }
 
+        /* =========================
+        Not Complete
+        ========================= */
         $user->forceFill(['intake_completed_at' => null])->save();
 
+        $warningMessage = 'Saved, but intake is not yet complete. Please fill all required fields.';
+
+        if ($needsMaidenHint) {
+            $warningMessage .= ' Also: Since you selected Female + Married/Widowed, adding your Maiden Name can help the Alumni Officer find and match your records faster (especially for Alumni ID requests and verification).';
+        }
+
         return redirect()->route('intake.form')
-            ->with('warning', 'Saved, but intake is not yet complete. Please fill all required fields.');
+            ->with('warning', $warningMessage);
     }
 
     private function intakeIsComplete(Alumnus $alumnus): bool

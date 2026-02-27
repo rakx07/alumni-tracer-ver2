@@ -236,6 +236,72 @@
         })();
     </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    function shouldUppercase(el) {
+        if (!el) return false;
+
+        // allow opt-out
+        if (el.dataset && el.dataset.noCaps === '1') return false;
+
+        const tag = (el.tagName || '').toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea') return false;
+
+        const type = (el.getAttribute('type') || 'text').toLowerCase();
+
+        // ✅ NEVER touch Laravel CSRF/method spoofing and hidden fields
+        if (type === 'hidden' || el.name === '_token' || el.name === '_method') return false;
+
+        // ❌ do NOT uppercase these types
+        if (type === 'email' ||
+            type === 'date' ||
+            type === 'number' ||
+            type === 'checkbox' ||
+            type === 'radio' ||
+            type === 'file' ||
+            type === 'password') {
+            return false;
+        }
+
+        // also skip buttons
+        if (type === 'submit' || type === 'button' || type === 'reset') return false;
+
+        return true;
+    }
+
+    function forceUppercase(el) {
+        if (!shouldUppercase(el)) return;
+
+        el.style.textTransform = 'uppercase';
+
+        if (el.dataset && el.dataset.capsBound === '1') return;
+        if (el.dataset) el.dataset.capsBound = '1';
+
+        const handler = () => {
+            const start = el.selectionStart;
+            const end   = el.selectionEnd;
+
+            const upper = (el.value || '').toUpperCase();
+            if (el.value !== upper) {
+                el.value = upper;
+                if (typeof start === 'number' && typeof end === 'number') {
+                    try { el.setSelectionRange(start, end); } catch (e) {}
+                }
+            }
+        };
+
+        el.addEventListener('input', handler);
+        el.addEventListener('blur', handler);
+        el.addEventListener('change', handler);
+        handler();
+    }
+
+    document.querySelectorAll('input, textarea').forEach(forceUppercase);
+});
+</script>
+
+  
     {{-- ✅ Include JS AFTER the form so wrappers exist --}}
     @include('user._intake_js', [
         'alumnus' => $alumnusLocal,

@@ -17,14 +17,36 @@
     <div class="py-8">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
 
+          {{-- =========================
+            STANDARDIZED ALERTS
+            ========================= --}}
+
+            @if(session('success'))
+                <div class="mb-4 p-4 rounded-lg border border-green-300 bg-green-50 text-green-800">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 p-4 rounded-lg border border-red-300 bg-red-50 text-red-800">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             @if(session('warning'))
-                <div class="p-3 mb-4 bg-yellow-100 border border-yellow-300 rounded text-yellow-900">
+                <div class="mb-4 p-4 rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-900">
                     {{ session('warning') }}
                 </div>
             @endif
 
+            @if(session('info'))
+                <div class="mb-4 p-4 rounded-lg border border-blue-300 bg-blue-50 text-blue-900">
+                    {{ session('info') }}
+                </div>
+            @endif
+
             @if ($errors->any())
-                <div class="p-4 mb-4 bg-red-100 border border-red-300 rounded">
+                <div class="mb-4 p-4 rounded-lg border border-red-300 bg-red-50 text-red-800">
                     <div class="font-semibold mb-2">Please fix the following:</div>
                     <ul class="list-disc ml-6">
                         @foreach ($errors->all() as $error)
@@ -33,13 +55,6 @@
                     </ul>
                 </div>
             @endif
-
-            @if(session('success'))
-                <div class="p-3 mb-4 bg-green-100 border border-green-300 rounded">
-                    {{ session('success') }}
-                </div>
-            @endif
-
             <form method="POST" action="{{ route('intake.save') }}" novalidate>
                 @csrf
 

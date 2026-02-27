@@ -49,6 +49,11 @@
                     {{ session('warning') }}
                 </div>
             @endif
+            @if(session('info'))
+                <div class="p-3 rounded border border-blue-200 bg-blue-50 text-blue-800">
+                    {{ session('info') }}
+                </div>
+            @endif
 
             @if(session('temp_password'))
                 <div class="p-3 rounded border border-blue-200 bg-blue-50 text-blue-800">

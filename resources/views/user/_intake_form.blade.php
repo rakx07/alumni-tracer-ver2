@@ -187,6 +187,54 @@
                 </select>
             </div>
 
+            {{-- Maiden Name (only show when Sex=Female and Civil Status=Married/Widowed) --}}
+@php
+    $maidenFirst  = old('maiden_first_name',  $alumnus->maiden_first_name ?? '');
+    $maidenMiddle = old('maiden_middle_name', $alumnus->maiden_middle_name ?? '');
+    $maidenLast   = old('maiden_last_name',   $alumnus->maiden_last_name ?? '');
+@endphp
+
+<div id="maiden-name-wrap" class="md:col-span-2 hidden">
+    <div class="border rounded p-4 bg-gray-50">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <div class="font-semibold text-sm text-gray-800">
+                    Maiden Name (optional)
+                </div>
+                <div class="text-xs text-gray-600 mt-1">
+                    If you are <b>Female</b> and <b>Married/Widowed</b>, providing your maiden name helps the Alumni Officer
+                    match your records faster (especially for Alumni ID requests and verification).
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+            <div>
+                <label class="block text-xs text-gray-600 mb-1">Maiden First Name</label>
+                <input name="maiden_first_name"
+                       class="w-full border rounded p-2"
+                       value="{{ $maidenFirst }}">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-600 mb-1">Maiden Middle Name (optional)</label>
+                <input name="maiden_middle_name"
+                       class="w-full border rounded p-2"
+                       value="{{ $maidenMiddle }}">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-600 mb-1">Maiden Last Name</label>
+                <input name="maiden_last_name"
+                       class="w-full border rounded p-2"
+                       value="{{ $maidenLast }}">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
             <div>
                 <label class="block text-sm font-medium">Contact Number</label>
                 <input name="contact_number" class="w-full border rounded p-2"
@@ -432,5 +480,30 @@
     });
 
     build();
+})();
+</script>
+<script>
+(function () {
+    const sexSel = document.querySelector('select[name="sex"]');
+    const csSel  = document.querySelector('select[name="civil_status"]');
+    const wrap   = document.getElementById('maiden-name-wrap');
+
+    if (!sexSel || !csSel || !wrap) return;
+
+    function shouldShow() {
+        const sex = (sexSel.value || '').toLowerCase();
+        const cs  = (csSel.value || '').toLowerCase();
+        return sex === 'female' && (cs === 'married' || cs === 'widowed');
+    }
+
+    function apply() {
+        const show = shouldShow();
+        wrap.classList.toggle('hidden', !show);
+        // Optional: do NOT auto-clear values when hidden (so user won't lose input)
+    }
+
+    sexSel.addEventListener('change', apply);
+    csSel.addEventListener('change', apply);
+    apply();
 })();
 </script>
