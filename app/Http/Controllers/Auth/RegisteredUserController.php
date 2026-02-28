@@ -23,11 +23,11 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         // Match your Blade local-host behavior
-        $localHosts = ['127.0.0.1', 'localhost', '192.168.20.105'];
+        $localHosts  = ['127.0.0.1', 'localhost', '192.168.20.105'];
         $isLocalHost = in_array($request->getHost(), $localHosts, true);
 
         // DB settings
-        $captchaEnabled = Settings::get('captcha_enabled', '1') === '1';
+        $captchaEnabled       = Settings::get('captcha_enabled', '1') === '1';
         $captchaBypassEnabled = Settings::get('captcha_it_admin_bypass', '0') === '1';
 
         // IT Admin bypass (only if already authenticated as it_admin)
@@ -35,6 +35,26 @@ class RegisteredUserController extends Controller
 
         // Final rule: require captcha only if enabled, not local, and not bypassed
         $shouldRequireCaptcha = $captchaEnabled && !$isLocalHost && !($captchaBypassEnabled && $isItAdmin);
+
+        /**
+         * ============================================================
+         * Normalize input BEFORE validate/save (server-side enforcement)
+         * - Names => ALL CAPS
+         * - Trim / collapse spaces
+         * - Email => lowercase (already required by your rules)
+         * ============================================================
+         */
+        $first  = $this->normalizeUpperName($request->input('first_name'));
+        $middle = $this->normalizeUpperName($request->input('middle_name'));
+        $last   = $this->normalizeUpperName($request->input('last_name'));
+
+        // Merge back into the request so validation + old() reflect normalized values
+        $request->merge([
+            'first_name'  => $first,
+            'middle_name' => $middle,
+            'last_name'   => $last,
+            'email'       => strtolower((string) $request->input('email')),
+        ]);
 
         $request->validate([
             'first_name'  => ['required', 'string', 'max:255'],
@@ -61,6 +81,7 @@ class RegisteredUserController extends Controller
                 ->withInput();
         }
 
+        // Build FULL NAME from normalized (ALL CAPS) parts
         $fullName = trim(
             $request->first_name . ' ' .
             ($request->middle_name ? $request->middle_name . ' ' : '') .
@@ -84,5 +105,32 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         return redirect()->route('dashboard');
+    }
+
+    /**
+     * Normalize a person-name string:
+     * - cast to string
+     * - trim
+     * - collapse multiple spaces
+     * - uppercase using UTF-8 (keeps Ñ, etc.)
+     */
+    private function normalizeUpperName($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = (string) $value;
+        $value = trim($value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        // collapse multiple spaces into one
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        // uppercase with UTF-8 support
+        return mb_strtoupper($value, 'UTF-8');
     }
 }

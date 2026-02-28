@@ -19,10 +19,7 @@
         $localHosts = ['127.0.0.1', 'localhost', '192.168.20.105'];
         $isLocalHost = in_array(request()->getHost(), $localHosts, true);
 
-        // ✅ DB setting switch (from Captcha Settings)
         $captchaEnabled = Settings::get('captcha_enabled', '1') === '1';
-
-        // ✅ show captcha only when enabled AND not local host
         $captchaShouldShow = $captchaEnabled && !$isLocalHost;
     @endphp
 
@@ -35,12 +32,27 @@
             --ndmu-green:#0B3D2E;
             --ndmu-gold:#E3C77A;
         }
-        .ndmu-grad { background: linear-gradient(90deg, var(--ndmu-green), var(--ndmu-gold)); }
-        .ndmu-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(227,199,122,.35); border-color: rgba(11,61,46,.35); }
+
+        .ndmu-grad {
+            background: linear-gradient(90deg, var(--ndmu-green), var(--ndmu-gold));
+        }
+
+        .ndmu-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(227,199,122,.35);
+            border-color: rgba(11,61,46,.35);
+        }
+
+        /* 🔥 Auto uppercase display for name fields */
+        .uppercase-input {
+            text-transform: uppercase;
+        }
     </style>
 </head>
 
 <body class="min-h-screen bg-gray-100">
+
+    {{-- LOGO --}}
     <div class="pt-8 pb-4 flex items-center justify-center">
         <img src="{{ asset('images/ndmu-logo.png') }}"
              alt="NDMU"
@@ -52,7 +64,8 @@
         <div class="mx-auto w-full max-w-5xl">
             <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2">
-                    {{-- LEFT HERO --}}
+
+                    {{-- LEFT SIDE --}}
                     <div class="relative min-h-[240px] md:min-h-full">
                         <div class="absolute inset-0"
                              style="
@@ -97,8 +110,9 @@
                         </div>
                     </div>
 
-                    {{-- RIGHT FORM --}}
+                    {{-- RIGHT SIDE --}}
                     <div class="p-6 md:p-10">
+
                         <div class="text-left">
                             <div class="text-xl md:text-2xl font-extrabold text-gray-900">
                                 NDMU Alumni Tracer
@@ -113,11 +127,13 @@
                             <form method="POST" action="{{ route('register') }}" class="space-y-4">
                                 @csrf
 
+                                {{-- NAME FIELDS --}}
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
                                     <div>
                                         <x-input-label for="first_name" :value="__('First Name')" class="font-semibold text-gray-800" />
                                         <x-text-input id="first_name"
-                                                      class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                      class="block mt-1 w-full rounded-xl ndmu-ring uppercase-input"
                                                       type="text"
                                                       name="first_name"
                                                       :value="old('first_name')"
@@ -131,7 +147,7 @@
                                     <div>
                                         <x-input-label for="middle_name" :value="__('Middle Name (Optional)')" class="font-semibold text-gray-800" />
                                         <x-text-input id="middle_name"
-                                                      class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                      class="block mt-1 w-full rounded-xl ndmu-ring uppercase-input"
                                                       type="text"
                                                       name="middle_name"
                                                       :value="old('middle_name')"
@@ -139,12 +155,13 @@
                                                       placeholder="Middle name" />
                                         <x-input-error :messages="$errors->get('middle_name')" class="mt-2" />
                                     </div>
+
                                 </div>
 
                                 <div>
                                     <x-input-label for="last_name" :value="__('Last Name')" class="font-semibold text-gray-800" />
                                     <x-text-input id="last_name"
-                                                  class="block mt-1 w-full rounded-xl ndmu-ring"
+                                                  class="block mt-1 w-full rounded-xl ndmu-ring uppercase-input"
                                                   type="text"
                                                   name="last_name"
                                                   :value="old('last_name')"
@@ -154,6 +171,7 @@
                                     <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                                 </div>
 
+                                {{-- EMAIL --}}
                                 <div>
                                     <x-input-label for="email" :value="__('Email')" class="font-semibold text-gray-800" />
                                     <x-text-input id="email"
@@ -167,6 +185,7 @@
                                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
                                 </div>
 
+                                {{-- PASSWORD --}}
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <x-input-label for="password" :value="__('Password')" class="font-semibold text-gray-800" />
@@ -193,7 +212,7 @@
                                     </div>
                                 </div>
 
-                                {{-- Captcha --}}
+                                {{-- CAPTCHA --}}
                                 @if($captchaShouldShow)
                                     <div class="pt-1">
                                         <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
@@ -206,6 +225,7 @@
                                     </div>
                                 @endif
 
+                                {{-- SUBMIT --}}
                                 <div class="pt-2">
                                     <button type="submit"
                                             class="w-full inline-flex justify-center items-center rounded-xl px-4 py-3 font-extrabold tracking-wide text-white"
@@ -233,5 +253,27 @@
             </div>
         </div>
     </main>
+
+    {{-- 🔥 FORCE UPPERCASE WHILE TYPING --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const nameFields = [
+                document.getElementById('first_name'),
+                document.getElementById('middle_name'),
+                document.getElementById('last_name')
+            ];
+
+            nameFields.forEach(field => {
+                if (!field) return;
+
+                field.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase();
+                });
+            });
+
+        });
+    </script>
+
 </body>
 </html>
